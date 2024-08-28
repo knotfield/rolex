@@ -194,4 +194,30 @@ defmodule Rolex.Permission do
       end)
     end)
   end
+
+  defimpl Inspect do
+    def inspect(permission, _opts) do
+      words =
+        [
+          permission.verb,
+          permission.role,
+          subject_or_object_to_string("to", permission.subject_type, permission.subject_id),
+          subject_or_object_to_string("on", permission.object_type, permission.object_id)
+        ]
+        |> Enum.filter(& &1)
+        |> Enum.join(" ")
+
+      "%Rolex.Permission<#{words}>"
+    end
+
+    defp subject_or_object_to_string(opt, type, id) do
+      type_string = inspect(type) |> String.trim_leading("Elixir.")
+
+      case {type, id} do
+        {:all, :all} -> "#{opt} all"
+        {_, :all} -> "#{opt} all #{type_string}"
+        {_, id} -> "#{opt} %#{type_string}{id: #{id}}"
+      end
+    end
+  end
 end

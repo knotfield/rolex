@@ -14,34 +14,26 @@ defmodule Rolex.PermissionTest do
     |> Repo.all()
   end
 
-  describe "parse_options/1" do
-    test "parses basic options" do
-      assert %{
-               verb: :grant,
-               role: :role_1,
-               subject_type: @all,
-               subject_id: @all,
-               object_type: @all,
-               object_id: @all
-             } = Permission.parse_options(verb: :grant, role: :role_1, to: @all, on: @all)
-    end
+  describe "inspect/2" do
+    test "implements the Inspect protocol" do
+      assert "%Rolex.Permission<to all on all>" =
+               inspect(%Permission{})
 
-    test "parses :to_all and :on_all options" do
-      assert %{
-               subject_type: User,
-               subject_id: @all,
-               object_type: Task,
-               object_id: @all
-             } = Permission.parse_options(to_all: User, on_all: Task)
-    end
+      assert "%Rolex.Permission<grant to all :management on all :staff>" =
+               inspect(%Permission{verb: :grant, subject_type: :management, object_type: :staff})
 
-    test "parses :to_any and :on_any options" do
-      assert %{
-               subject_type: User,
-               subject_id: @any,
-               object_type: Task,
-               object_id: @any
-             } = Permission.parse_options(to_any: User, on_any: Task)
+      assert "%Rolex.Permission<grant to all Rolex.User on all Rolex.Task>" =
+               inspect(%Permission{verb: :grant, subject_type: User, object_type: Task})
+
+      assert "%Rolex.Permission<deny some_role to %Rolex.User{id: 42} on %Rolex.Task{id: 123}>" =
+               inspect(%Permission{
+                 verb: :deny,
+                 role: :some_role,
+                 subject_type: User,
+                 subject_id: 42,
+                 object_type: Task,
+                 object_id: 123
+               })
     end
   end
 
