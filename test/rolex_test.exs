@@ -3,8 +3,6 @@ defmodule RolexTest do
 
   doctest Rolex
 
-  @all Application.compile_env(:rolex, :all_atom, :all)
-
   setup do
     user = user_fixture()
     task = task_fixture()

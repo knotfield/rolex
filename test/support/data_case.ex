@@ -13,13 +13,20 @@ defmodule Rolex.DataCase do
       alias Rolex.Task
       alias Rolex.User
 
+      @all Application.compile_env(:rolex, :all_atom, :all)
+      @any Application.compile_env(:rolex, :any_atom, :any)
+
       def user_fixture(attrs \\ %{}) do
         struct(User, attrs) |> Repo.insert!()
       end
 
+      def user_fixtures(n), do: for(_i <- 1..n//1, do: user_fixture()) |> Enum.sort_by(& &1.id)
+
       def task_fixture(attrs \\ %{}) do
         struct(Task, attrs) |> Repo.insert!()
       end
+
+      def task_fixtures(n), do: for(_i <- 1..n//1, do: task_fixture()) |> Enum.sort_by(& &1.id)
     end
   end
 

@@ -3,9 +3,6 @@ defmodule Rolex.PermissionTest do
 
   alias Rolex.Permission
 
-  @all Application.compile_env(:rolex, :all_atom, :all)
-  @any Application.compile_env(:rolex, :any_atom, :any)
-
   def list_roles_where_granted(opts \\ []) do
     Permission.base_query()
     |> Permission.where_granted(opts)

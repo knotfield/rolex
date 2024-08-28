@@ -3,9 +3,6 @@ defmodule Rolex.QueryableTest do
 
   import Rolex.Queryable
 
-  @all Application.compile_env(:rolex, :all_atom, :all)
-  @any Application.compile_env(:rolex, :any_atom, :any)
-
   def list_users_granted_to(opts \\ []) do
     from(q in User)
     |> where_granted_to(opts)
@@ -19,9 +16,6 @@ defmodule Rolex.QueryableTest do
     |> order_by([q], q.id)
     |> Repo.all()
   end
-
-  def user_fixtures(n), do: for(_i <- 1..n//1, do: user_fixture()) |> Enum.sort_by(& &1.id)
-  def task_fixtures(n), do: for(_i <- 1..n//1, do: task_fixture()) |> Enum.sort_by(& &1.id)
 
   setup do
     [user_1, user_2] = user_fixtures(2)
