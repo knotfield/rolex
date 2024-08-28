@@ -63,10 +63,8 @@ defmodule Rolex.Permission do
     |> validate_inclusion(:verb, [:deny])
   end
 
-  @doc """
-  Parses options into permission attributes.
-  """
-  def parse_options(opts, overriding_opts \\ []) do
+  # this is the bit that hides the implementation details of our friendly to/from/on DSL
+  defp parse_options(opts, overriding_opts \\ []) do
     [opts, overriding_opts]
     |> Enum.map(&to_option_map/1)
     |> then(fn [a, b] -> Map.merge(a, b) end)
@@ -93,8 +91,9 @@ defmodule Rolex.Permission do
     |> Enum.into(%{})
   end
 
-  defp to_option_map(opts) do
-    opts
+  # normalizes a map or keyword list into an atom-keyed map
+  defp to_option_map(enumerable) do
+    enumerable
     |> Enum.map(fn {k, v} -> {to_string(k) |> String.to_atom(), v} end)
     |> Enum.into(%{})
   end

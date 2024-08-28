@@ -34,6 +34,38 @@ defmodule Rolex.PermissionTest do
     end
   end
 
+  # took this function private to discourage unexpected use
+  # describe "parse_options/1" do
+  #   test "parses basic options" do
+  #     assert %{
+  #              verb: :grant,
+  #              role: :role_1,
+  #              subject_type: @all,
+  #              subject_id: @all,
+  #              object_type: @all,
+  #              object_id: @all
+  #            } = Permission.parse_options(verb: :grant, role: :role_1, to: @all, on: @all)
+  #   end
+
+  #   test "parses :to_all and :on_all options" do
+  #     assert %{
+  #              subject_type: User,
+  #              subject_id: @all,
+  #              object_type: Task,
+  #              object_id: @all
+  #            } = Permission.parse_options(to_all: User, on_all: Task)
+  #   end
+
+  #   test "parses :to_any and :on_any options" do
+  #     assert %{
+  #              subject_type: User,
+  #              subject_id: @any,
+  #              object_type: Task,
+  #              object_id: @any
+  #            } = Permission.parse_options(to_any: User, on_any: Task)
+  #   end
+  # end
+
   describe "where_granted/2" do
     setup do
       user = user_fixture()
