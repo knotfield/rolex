@@ -4,6 +4,11 @@ defmodule Rolex.MixProject do
   def project do
     [
       app: :rolex,
+      description:
+        "Rolex is a role management library for Elixir apps. It is minimally intrusive, uses a GRANT/DENY/REVOKE permission model, and offers Ecto query scoping out of the box.",
+      licenses: ["MIT"],
+      links: %{github: "https://github.com/knotfield/rolex"},
+      source_url: %{github: "https://github.com/knotfield/rolex"},
       version: "0.1.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
