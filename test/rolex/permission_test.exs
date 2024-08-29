@@ -1,11 +1,13 @@
 defmodule Rolex.PermissionTest do
   use Rolex.DataCase
 
+  import Rolex.Permission
+
   alias Rolex.Permission
 
   def list_roles_where_granted(opts \\ []) do
-    Permission.base_query()
-    |> Permission.where_granted(opts)
+    base_query()
+    |> where_granted(opts)
     |> order_by([q], q.role)
     |> select([q], q.role)
     |> Repo.all()
@@ -13,16 +15,18 @@ defmodule Rolex.PermissionTest do
 
   describe "inspect/2" do
     test "implements the Inspect protocol" do
-      assert "%Rolex.Permission<to all on all>" =
-               inspect(%Permission{})
-
-      assert "%Rolex.Permission<grant to all :management on all :staff>" =
-               inspect(%Permission{verb: :grant, subject_type: :management, object_type: :staff})
+      assert "%Rolex.Permission<>" = inspect(%Permission{})
 
       assert "%Rolex.Permission<grant to all Rolex.User on all Rolex.Task>" =
-               inspect(%Permission{verb: :grant, subject_type: User, object_type: Task})
+               inspect(%Permission{
+                 verb: :grant,
+                 subject_type: User,
+                 subject_id: :all,
+                 object_type: Task,
+                 object_id: :all
+               })
 
-      assert "%Rolex.Permission<deny some_role to %Rolex.User{id: 42} on %Rolex.Task{id: 123}>" =
+      assert "%Rolex.Permission<deny some_role to Rolex.User 42 on Rolex.Task 123>" =
                inspect(%Permission{
                  verb: :deny,
                  role: :some_role,
@@ -44,25 +48,25 @@ defmodule Rolex.PermissionTest do
   #              subject_id: @all,
   #              object_type: @all,
   #              object_id: @all
-  #            } = Permission.parse_options(verb: :grant, role: :role_1, to: @all, on: @all)
+  #            } = parse_options(verb: :grant, role: :role_1, to: @all, on: @all)
   #   end
 
-  #   test "parses :to_all and :on_all options" do
+  #   test "parses to: <module> and on: <module> options" do
   #     assert %{
   #              subject_type: User,
   #              subject_id: @all,
   #              object_type: Task,
   #              object_id: @all
-  #            } = Permission.parse_options(to_all: User, on_all: Task)
+  #            } = parse_options(to: User, on: Task)
   #   end
 
-  #   test "parses :to_any and :on_any options" do
+  #   test "parses to: {:any, <module>} and on: {:any, <module>} options" do
   #     assert %{
   #              subject_type: User,
   #              subject_id: @any,
   #              object_type: Task,
   #              object_id: @any
-  #            } = Permission.parse_options(to_any: User, on_any: Task)
+  #            } = parse_options(to: {:any, User}, on: {:any, Task})
   #   end
   # end
 
@@ -71,8 +75,8 @@ defmodule Rolex.PermissionTest do
       user = user_fixture()
       task = task_fixture()
 
-      assert {:ok, _} = Rolex.grant_role(:role_1, to: @all, on_all: Task)
-      assert {:ok, _} = Rolex.grant_role(:role_2, to_all: User, on: task)
+      assert {:ok, _} = Rolex.grant_role(:role_1, to: @all, on: Task)
+      assert {:ok, _} = Rolex.grant_role(:role_2, to: User, on: task)
       assert {:ok, _} = Rolex.grant_role(:role_3, to: user, on: @all)
 
       %{user: user, task: task}
@@ -86,18 +90,18 @@ defmodule Rolex.PermissionTest do
       assert [:role_3] = list_roles_where_granted(on: @all)
     end
 
-    test "(on_all: _) narrows the query to permissions granted on all resources of the given type" do
-      assert [:role_1, :role_3] = list_roles_where_granted(on_all: Task)
-      assert [:role_3] = list_roles_where_granted(on_all: User)
+    test "(on: <module>) narrows the query to permissions granted on all resources of the given type" do
+      assert [:role_1, :role_3] = list_roles_where_granted(on: Task)
+      assert [:role_3] = list_roles_where_granted(on: User)
     end
 
-    test "(on: @any) narrows the query to permissions granted on anything" do
+    test "(on: #{@any}) narrows the query to permissions granted on anything" do
       assert [:role_1, :role_2, :role_3] = list_roles_where_granted(on: @any)
     end
 
-    test "(on_any: _) narrows the query to permissions granted on any resource of the given type" do
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(on_any: Task)
-      assert [:role_3] = list_roles_where_granted(on_any: User)
+    test "(on: {:any, <module>}) narrows the query to permissions granted on any resource of the given type" do
+      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(on: {:any, Task})
+      assert [:role_3] = list_roles_where_granted(on: {:any, User})
     end
 
     test "(on: _) narrows the query to permissions granted on the given resource",
@@ -110,18 +114,18 @@ defmodule Rolex.PermissionTest do
       assert [:role_1] = list_roles_where_granted(to: @all)
     end
 
-    test "(to_all: _) narrows the query to permissions granted to all resources of the given type" do
-      assert [:role_1] = list_roles_where_granted(to_all: Task)
-      assert [:role_1, :role_2] = list_roles_where_granted(to_all: User)
+    test "(to: <module>) narrows the query to permissions granted to all resources of the given type" do
+      assert [:role_1] = list_roles_where_granted(to: Task)
+      assert [:role_1, :role_2] = list_roles_where_granted(to: User)
     end
 
-    test "(to: @any) narrows the query to permissions granted to anything" do
+    test "(to: #{@any}) narrows the query to permissions granted to anything" do
       assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: @any)
     end
 
-    test "(to_any: _)) narrows the query to permissions granted to any resource of the given type" do
-      assert [:role_1] = list_roles_where_granted(to_any: Task)
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to_any: User)
+    test "(to: {:any, <module>})) narrows the query to permissions granted to any resource of the given type" do
+      assert [:role_1] = list_roles_where_granted(to: {:any, Task})
+      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: {:any, User})
     end
 
     test "(to: _) narrows the query to permissions granted to the given resource",

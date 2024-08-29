@@ -3,45 +3,40 @@ defmodule Rolex.Control do
   Provides functions for granting, denying, and revoking permissions.
   """
 
+  alias Rolex.Options
   alias Rolex.Permission
 
   for verb <- [:grant, :deny] do
     @doc """
     Creates a role-#{verb}ing permission with the given options.
 
-    A permission's subject ("who") and object ("what") define its "scope".
-    Subjects and objects may be an entire Ecto schema (e.g. `MyApp.Users.User`),
-    a plain atom (e.g. `:users`), or an individual record (e.g. `user`).
-
-    ## Options:
-
-    * `role` - at atom naming the role
-    * `to` - the permission subject ("who")
-    * `on` - the permission object ("what")
-
     Returns `{:ok, %Permission{}}` on success.
+
+    See `c:Rolex.Options` for options.
     """
-    def unquote(:"#{verb}")(opts) do
+    def unquote(:"#{verb}")(opts \\ []) do
       apply_to_repo(unquote(verb), opts)
     end
 
     @doc """
     Creates a role-#{verb}ing permission.
 
-    See `c:#{verb}/1` for options.
-
     Returns `%Permission{}` on success; raises an exception otherwise.
+
+    See `c:Rolex.Options` for options.
     """
-    def unquote(:"#{verb}!")(opts) do
+    def unquote(:"#{verb}!")(opts \\ []) do
       unquote(:"#{verb}")(opts) |> ok_result!()
     end
 
     @doc """
     Adds a multi operation to create a role-#{verb}ing permission.
 
-    See `c:#{verb}/1` for options.
+    Returns the updated multi.
+
+    See `c:Rolex.Options` for options.
     """
-    def unquote(:"multi_#{verb}")(multi \\ Ecto.Multi.new(), opts) do
+    def unquote(:"multi_#{verb}")(multi \\ Ecto.Multi.new(), opts \\ []) do
       apply_to_multi(multi, unquote(verb), opts)
     end
 
@@ -49,11 +44,11 @@ defmodule Rolex.Control do
       @doc """
       Creates a role-#{verb}ing permission, prefilling `[#{opt}: noun]`.
 
-      See `c:#{verb}/1` for other options.
-
       Returns `{:ok, noun}` on success.
+
+      See `c:Rolex.Options` for other options.
       """
-      def unquote(:"#{verb}_#{opt}")(noun, opts) do
+      def unquote(:"#{verb}_#{opt}")(noun, opts \\ []) do
         with {:ok, %Permission{}} <- apply_to_repo(unquote(verb), [{unquote(opt), noun} | opts]) do
           {:ok, noun}
         end
@@ -62,38 +57,36 @@ defmodule Rolex.Control do
       @doc """
       Creates a role-#{verb}ing permission, prefilling `[#{opt}: noun]`.
 
-      See `c:#{verb}/1` for other options.
-
       Returns `noun` on success; raises an exception otherwise.
+
+      See `c:Rolex.Options` for other options.
       """
-      def unquote(:"#{verb}_#{opt}!")(noun, opts) do
+      def unquote(:"#{verb}_#{opt}!")(noun, opts \\ []) do
         unquote(:"#{verb}_#{opt}")(noun, opts) |> ok_result!()
       end
 
       @doc """
       Adds a multi operation to create a role-#{verb}ing permission, prefilling `[#{opt}: noun]`.
 
-      See `c:#{verb}/1` for other options.
+      Returns the updated multi.
+
+      See `c:Rolex.Options` for other options.
       """
-      def unquote(:"multi_#{verb}_#{opt}")(multi \\ Ecto.Multi.new(), noun, opts) do
+      def unquote(:"multi_#{verb}_#{opt}")(multi \\ Ecto.Multi.new(), noun, opts \\ []) do
         apply_to_multi(multi, unquote(verb), [{unquote(opt), noun} | opts])
       end
     end
   end
 
   @doc """
-  Deletes all permissions matching the given options exactly.
+  Deletes all permissions matching the given options.
 
-  ## Options:
+  Returns `{:ok, <number-of-permissions-deleted>}` on success, or {:error, changeset} otherwise.
 
-  * `role` - at atom naming the role
-  * `from` - the permission subject ("who")
-  * `on` - the permission object ("what")
-
-  Returns `{:ok, <number-of-permissions-deleted>}` on success.
+  See `c:Rolex.Options` for options.
   """
-  def revoke(opts) do
-    with {count, _} <- apply_to_repo(:revoke, opts) do
+  def revoke(opts \\ []) do
+    with {count, _} when is_integer(count) <- apply_to_repo(:revoke, opts) do
       {:ok, count}
     end
   end
@@ -102,6 +95,8 @@ defmodule Rolex.Control do
   Deletes all permissions matching the given options exactly.
 
   Returns the number of permissions deleted on success; raises an exception otherwise.
+
+  See `c:Rolex.Options` for options.
   """
   def revoke!(opts) do
     revoke(opts) |> ok_result!()
@@ -109,8 +104,12 @@ defmodule Rolex.Control do
 
   @doc """
   Adds an operation to delete all permissions matching the given options exactly.
+
+  Returns the updated multi.
+
+  See `c:Rolex.Options` for options.
   """
-  def multi_revoke(%Ecto.Multi{} = multi \\ Ecto.Multi.new(), opts) do
+  def multi_revoke(%Ecto.Multi{} = multi, opts) do
     apply_to_multi(multi, :revoke, opts)
   end
 
@@ -118,49 +117,64 @@ defmodule Rolex.Control do
     @doc """
     Deletes all permissions matching the given options exactly, prefilling `[#{opt}: noun]`.
 
-    See `c:revoke/1` for other options.
+    Returns `{:ok, noun}` on success.
 
-    Returns `{:ok, <number-of-permissions-deleted>}` on success.
+    See `c:Rolex.Options` for other options.
     """
-    def unquote(:"revoke_#{opt}")(noun, opts) do
-      revoke([{unquote(opt), noun} | opts])
+    def unquote(:"revoke_#{opt}")(noun, opts \\ []) do
+      with {:ok, _} <- revoke([{unquote(opt), noun} | opts]) do
+        {:ok, noun}
+      end
     end
 
     @doc """
     Deletes all permissions matching the given options exactly, prefilling `[#{opt}: noun]`.
 
-    See `c:revoke/1` for other options.
-
     Returns the number of permissions deleted on success; raises an exception otherwise.
+
+    See `c:Rolex.Options` for other options.
     """
-    def unquote(:"revoke_#{opt}!")(noun, opts) do
+    def unquote(:"revoke_#{opt}!")(noun, opts \\ []) do
       revoke([{unquote(opt), noun} | opts]) |> ok_result!()
     end
 
     @doc """
     Adds a multi operation to delete all permissions matching the given options exactly, prefilling `[#{opt}: noun]`.
 
-    See `c:revoke/1` for other options.
+    Returns the updated multi.
+
+    See `c:Rolex.Options` for other options.
     """
-    def unquote(:"multi_revoke_#{opt}")(multi \\ Ecto.Multi.new(), noun, opts) do
+    def unquote(:"multi_revoke_#{opt}")(%Ecto.Multi{} = multi, noun, opts \\ []) do
       multi_revoke(multi, [{unquote(opt), noun} | opts])
     end
   end
 
   defp ok_result!({:ok, result}), do: result
 
+  defp validate_options(operation, opts) do
+    case Options.changeset(operation, opts) do
+      %{valid?: true} -> :ok
+      changeset -> {:error, changeset}
+    end
+  end
+
   # uses apply/3 to execute an operation against the configured repo
   defp apply_to_repo(operation, opts) do
-    {function, args} = operation_tuple(operation, opts)
+    with :ok <- validate_options(operation, opts) do
+      {function, args} = operation_tuple(operation, opts)
 
-    Application.fetch_env!(:rolex, :repo)
-    |> apply(function, args)
+      Application.fetch_env!(:rolex, :repo)
+      |> apply(function, args)
+    end
   end
 
   # uses apply/3 to add the indicated operation to the multi
   defp apply_to_multi(multi, operation, opts) do
-    {function, args} = operation_tuple(operation, opts)
-    apply(Ecto.Multi, function, [multi, make_ref() | args])
+    with :ok <- validate_options(operation, opts) do
+      {function, args} = operation_tuple(operation, opts)
+      apply(Ecto.Multi, function, [multi, make_ref() | args])
+    end
   end
 
   # returns a {function, args} tuple that can be used with either a repo or a multi

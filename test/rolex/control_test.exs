@@ -1,29 +1,45 @@
 defmodule Rolex.ControlTest do
   use Rolex.DataCase
 
-  doctest Rolex.Control
+  import Rolex.Control
+
+  defp prepare_for_revoke_tests(_context) do
+    [user_1, user_2] = user_fixtures(2)
+    [task_1, task_2] = task_fixtures(2)
+
+    grant_role!(:role_1, to: @all, on: Task)
+    grant_role!(:role_2, to: User, on: task_1)
+    grant_role!(:role_3, to: user_1, on: @all)
+
+    %{user_1: user_1, user_2: user_2, task_1: task_1, task_2: task_2}
+  end
 
   describe "grant/1" do
-    test "upserts a grant permission to the configured repo and returns {:ok, %Permission{}}" do
-      %{id: user_id, __struct__: user_type} = user = user_fixture()
-      %{id: task_id, __struct__: task_type} = task = task_fixture()
+    test "returns {:error, changeset} if opts are invalid" do
+      assert {:error, %Ecto.Changeset{}} = grant([])
+    end
 
-      {:ok,
-       %Permission{
-         verb: :grant,
-         role: :role_1,
-         subject_type: ^user_type,
-         subject_id: ^user_id,
-         object_type: ^task_type,
-         object_id: ^task_id
-       }} = Rolex.grant(role: :role_1, to: user, on: task)
+    test "upserts a grant permission to the configured repo and returns {:ok, %Permission{}}" do
+      user = user_fixture()
+      task = task_fixture()
+
+      assert {:ok, %Permission{}} = grant(role: :role_1, to: user, on: task)
+
+      assert Repo.get_by(Permission,
+               verb: :grant,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
 
     test "doesn't create a new grant permission if an identical one already exists" do
       attrs = %{role: :role_1, to: user_fixture(), on: task_fixture()}
 
-      assert {:ok, permission} = Rolex.grant(attrs)
-      assert {:ok, ^permission} = Rolex.grant(attrs)
+      assert {:ok, permission} = grant(attrs)
+      assert {:ok, ^permission} = grant(attrs)
     end
   end
 
@@ -32,71 +48,81 @@ defmodule Rolex.ControlTest do
       user = user_fixture()
       task = task_fixture()
 
-      {:ok, :role_1} = Rolex.grant_role(:role_1, to: user, on: task)
+      assert {:ok, :role_1} = grant_role(:role_1, to: user, on: task)
+
+      assert Repo.get_by(Permission,
+               verb: :grant,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
   end
 
   describe "grant_to/2" do
     test "upserts a grant permission to the configured repo and returns {:ok, subject}" do
-      %{id: user_id, __struct__: user_type} = user = user_fixture()
-      %{id: task_id, __struct__: task_type} = task = task_fixture()
+      user = user_fixture()
+      task = task_fixture()
 
-      {:ok, ^user} = Rolex.grant_to(user, role: :role_1, on: task)
+      assert {:ok, ^user} = grant_to(user, role: :role_1, on: task)
 
-      assert [
-               %Permission{
-                 verb: :grant,
-                 role: :role_1,
-                 subject_type: ^user_type,
-                 subject_id: ^user_id,
-                 object_type: ^task_type,
-                 object_id: ^task_id
-               }
-             ] = Repo.all(Permission)
+      assert Repo.get_by(Permission,
+               verb: :grant,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
   end
 
   describe "grant_on/2" do
     test "upserts a grant permission to the configured repo and returns {:ok, object}" do
-      %{id: user_id, __struct__: user_type} = user = user_fixture()
-      %{id: task_id, __struct__: task_type} = task = task_fixture()
+      user = user_fixture()
+      task = task_fixture()
 
-      {:ok, ^task} = Rolex.grant_on(task, role: :role_1, to: user)
+      assert {:ok, ^task} = grant_on(task, role: :role_1, to: user)
 
-      assert [
-               %Permission{
-                 verb: :grant,
-                 role: :role_1,
-                 subject_type: ^user_type,
-                 subject_id: ^user_id,
-                 object_type: ^task_type,
-                 object_id: ^task_id
-               }
-             ] = Repo.all(Permission)
+      assert Repo.get_by(Permission,
+               verb: :grant,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
   end
 
   describe "deny/1" do
-    test "upserts a deny permission to the configured repo and returns {:ok, %Permission{}}" do
-      %{id: user_id, __struct__: user_type} = user = user_fixture()
-      %{id: task_id, __struct__: task_type} = task = task_fixture()
+    test "returns {:error, changeset} if opts are invalid" do
+      assert {:error, %Ecto.Changeset{}} = deny([])
+    end
 
-      {:ok,
-       %Permission{
-         verb: :deny,
-         role: :role_1,
-         subject_type: ^user_type,
-         subject_id: ^user_id,
-         object_type: ^task_type,
-         object_id: ^task_id
-       }} = Rolex.deny(role: :role_1, to: user, on: task)
+    test "upserts a deny permission to the configured repo and returns {:ok, %Permission{}}" do
+      user = user_fixture()
+      task = task_fixture()
+
+      assert {:ok, %Permission{}} = deny(role: :role_1, to: user, on: task)
+
+      assert Repo.get_by(Permission,
+               verb: :deny,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
 
     test "doesn't create a new deny permission if an identical one already exists" do
       attrs = %{role: :role_1, to: user_fixture(), on: task_fixture()}
 
-      assert {:ok, permission} = Rolex.deny(attrs)
-      assert {:ok, ^permission} = Rolex.deny(attrs)
+      assert {:ok, permission} = deny(attrs)
+      assert {:ok, ^permission} = deny(attrs)
     end
   end
 
@@ -105,59 +131,104 @@ defmodule Rolex.ControlTest do
       user = user_fixture()
       task = task_fixture()
 
-      {:ok, :role_1} = Rolex.deny_role(:role_1, to: user, on: task)
+      assert {:ok, :role_1} = deny_role(:role_1, to: user, on: task)
+
+      assert Repo.get_by(Permission,
+               verb: :deny,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
   end
 
   describe "deny_to/2" do
     test "upserts a deny permission to the configured repo and returns {:ok, subject}" do
-      %{id: user_id, __struct__: user_type} = user = user_fixture()
-      %{id: task_id, __struct__: task_type} = task = task_fixture()
+      user = user_fixture()
+      task = task_fixture()
 
-      {:ok, ^user} = Rolex.deny_to(user, role: :role_1, on: task)
+      assert {:ok, ^user} = deny_to(user, role: :role_1, on: task)
 
-      assert [
-               %Permission{
-                 verb: :deny,
-                 role: :role_1,
-                 subject_type: ^user_type,
-                 subject_id: ^user_id,
-                 object_type: ^task_type,
-                 object_id: ^task_id
-               }
-             ] = Repo.all(Permission)
+      assert Repo.get_by(Permission,
+               verb: :deny,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
   end
 
   describe "deny_on/2" do
     test "upserts a deny permission to the configured repo and returns {:ok, object}" do
-      %{id: user_id, __struct__: user_type} = user = user_fixture()
-      %{id: task_id, __struct__: task_type} = task = task_fixture()
+      user = user_fixture()
+      task = task_fixture()
 
-      {:ok, ^task} = Rolex.deny_on(task, role: :role_1, to: user)
+      assert {:ok, ^task} = deny_on(task, role: :role_1, to: user)
 
-      assert [
-               %Permission{
-                 verb: :deny,
-                 role: :role_1,
-                 subject_type: ^user_type,
-                 subject_id: ^user_id,
-                 object_type: ^task_type,
-                 object_id: ^task_id
-               }
-             ] = Repo.all(Permission)
+      assert Repo.get_by(Permission,
+               verb: :deny,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
     end
   end
 
   describe "revoke/1" do
-    test "deletes matching permissions from the configured repo and returns {<deleted-count>, nil}" do
-      user = user_fixture()
-      task = task_fixture()
+    setup [:prepare_for_revoke_tests]
 
-      Rolex.grant!(role: :role_1, to: user, on: task)
-      Rolex.grant!(role: :role_1, to: user, on: task_fixture())
+    test "returns {:error, changeset} if opts are invalid" do
+      assert {:error, %{valid?: false}} = revoke([])
+    end
 
-      {:ok, 1} = Rolex.revoke_from(user, role: :role_1, on: task)
+    test "deletes matching permissions from the configured repo and returns {:ok, <deleted-count>}",
+         %{user_1: user_1, task_1: task_1} do
+      assert {:ok, 1} = revoke(role: :role_1, from: @all, on: Task)
+      assert {:ok, 1} = revoke(role: :role_2, from: User, on: task_1)
+      assert {:ok, 1} = revoke(role: :role_3, from: user_1, on: @all)
+      assert [] = Repo.all(Permission)
+    end
+  end
+
+  describe "revoke_role/2" do
+    setup [:prepare_for_revoke_tests]
+
+    test "deletes matching permissions from the configured repo and returns {:ok, role}",
+         %{user_1: user_1, task_1: task_1} do
+      assert {:ok, :role_1} = revoke_role(:role_1, from: @all, on: Task)
+      assert {:ok, :role_2} = revoke_role(:role_2, from: User, on: task_1)
+      assert {:ok, :role_3} = revoke_role(:role_3, from: user_1, on: @all)
+      assert [] = Repo.all(Permission)
+    end
+  end
+
+  describe "revoke_from/2" do
+    setup [:prepare_for_revoke_tests]
+
+    test "deletes matching permissions from the configured repo and returns {:ok, subject}",
+         %{user_1: user_1, task_1: task_1} do
+      assert {:ok, @all} = revoke_from(@all, role: :role_1, on: Task)
+      assert {:ok, User} = revoke_from(User, role: :role_2, on: task_1)
+      assert {:ok, ^user_1} = revoke_from(user_1, role: :role_3, on: @all)
+      assert [] = Repo.all(Permission)
+    end
+  end
+
+  describe "revoke_on/2" do
+    setup [:prepare_for_revoke_tests]
+
+    test "deletes matching permissions from the configured repo and returns {:ok, object}",
+         %{user_1: user_1, task_1: task_1} do
+      assert {:ok, Task} = revoke_on(Task, role: :role_1, from: @all)
+      assert {:ok, ^task_1} = revoke_on(task_1, role: :role_2, from: User)
+      assert {:ok, @all} = revoke_on(@all, role: :role_3, from: user_1)
+      assert [] = Repo.all(Permission)
     end
   end
 
@@ -173,7 +244,24 @@ defmodule Rolex.ControlTest do
                  ]}}
              ] =
                Ecto.Multi.new()
-               |> Rolex.multi_grant(role: :role_1)
+               |> multi_grant(role: :role_1, to: @all, on: @all)
+               |> Ecto.Multi.to_list()
+    end
+  end
+
+  describe "multi_grant_role/3" do
+    test "adds a grant permission operation to an %Ecto.Multi{}" do
+      assert [
+               {_reference,
+                {:insert, %{valid?: true},
+                 [
+                   on_conflict: [set: [verb: :grant]],
+                   conflict_target: _,
+                   returning: true
+                 ]}}
+             ] =
+               Ecto.Multi.new()
+               |> multi_grant_role(:role_1, to: @all, on: @all)
                |> Ecto.Multi.to_list()
     end
   end
@@ -190,7 +278,7 @@ defmodule Rolex.ControlTest do
                  ]}}
              ] =
                Ecto.Multi.new()
-               |> Rolex.multi_deny(role: :role_1)
+               |> multi_deny(role: :role_1, to: @all, on: @all)
                |> Ecto.Multi.to_list()
     end
   end
@@ -201,7 +289,7 @@ defmodule Rolex.ControlTest do
                {_reference, {:delete_all, %Ecto.Query{}, []}}
              ] =
                Ecto.Multi.new()
-               |> Rolex.multi_revoke(role: :role_1)
+               |> multi_revoke(role: :role_1, from: @all, on: @all)
                |> Ecto.Multi.to_list()
     end
   end

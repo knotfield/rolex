@@ -21,8 +21,8 @@ defmodule Rolex.QueryableTest do
     [user_1, user_2] = user_fixtures(2)
     [task_1, task_2] = task_fixtures(2)
 
-    Rolex.grant_role!(:role_1, to: @all, on_all: Task)
-    Rolex.grant_role!(:role_2, to_all: User, on: task_1)
+    Rolex.grant_role!(:role_1, to: @all, on: Task)
+    Rolex.grant_role!(:role_2, to: User, on: task_1)
     Rolex.grant_role!(:role_3, to: user_1, on: @all)
 
     %{user_1: user_1, user_2: user_2, task_1: task_1, task_2: task_2}
@@ -86,18 +86,18 @@ defmodule Rolex.QueryableTest do
       assert [:role_3] = list_roles_granted(on: @all)
     end
 
-    test "[on_all: _] filters the list to permissions granted on all resources of the given type" do
-      assert [:role_1, :role_3] = list_roles_granted(on_all: Task)
-      assert [:role_3] = list_roles_granted(on_all: User)
+    test "[on: <module>] filters the list to permissions granted on all resources of the given type" do
+      assert [:role_1, :role_3] = list_roles_granted(on: Task)
+      assert [:role_3] = list_roles_granted(on: User)
     end
 
     test "[on: #{@any}] filters the list to permissions granted on anything" do
       assert [:role_1, :role_2, :role_3] = list_roles_granted(on: @any)
     end
 
-    test "[on_any: _] filters the list to permissions granted on any resource of the given type" do
-      assert [:role_1, :role_2, :role_3] = list_roles_granted(on_any: Task)
-      assert [:role_3] = list_roles_granted(on_any: User)
+    test "[on: {:any, <module>}] filters the list to permissions granted on any resource of the given type" do
+      assert [:role_1, :role_2, :role_3] = list_roles_granted(on: {:any, Task})
+      assert [:role_3] = list_roles_granted(on: {:any, User})
     end
 
     test "[on: _] filters the list to permissions granted on the given resource",
@@ -110,18 +110,18 @@ defmodule Rolex.QueryableTest do
       assert [:role_1] = list_roles_granted(to: @all)
     end
 
-    test "[to_all: _] filters the list to permissions granted to all resources of the given type" do
-      assert [:role_1] = list_roles_granted(to_all: Task)
-      assert [:role_1, :role_2] = list_roles_granted(to_all: User)
+    test "[to: <module>] filters the list to permissions granted to all resources of the given type" do
+      assert [:role_1] = list_roles_granted(to: Task)
+      assert [:role_1, :role_2] = list_roles_granted(to: User)
     end
 
     test "[to: #{@any}] filters the list to permissions granted to anything" do
       assert [:role_1, :role_2, :role_3] = list_roles_granted(to: @any)
     end
 
-    test "[to_any: _] filters the list to permissions granted to any resource of the given type" do
-      assert [:role_1] = list_roles_granted(to_any: Task)
-      assert [:role_1, :role_2, :role_3] = list_roles_granted(to_any: User)
+    test "[to: {:any, <module>}] filters the list to permissions granted to any resource of the given type" do
+      assert [:role_1] = list_roles_granted(to: {:any, Task})
+      assert [:role_1, :role_2, :role_3] = list_roles_granted(to: {:any, User})
     end
 
     test "[to: _] filters the list to permissions granted to the given resource",

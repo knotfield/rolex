@@ -32,7 +32,7 @@ Rolex.where_granted_to(User, role: :editor, on: task) |> MyApp.Repo.all()
 permissions = Rolex.load_permissions_granted_to(user)
 
 # do these permissions grant :editor on any tasks?
-permissions |> granted?(role: :editor, on_any: Task)
+permissions |> granted?(role: :editor, on: {:any, Task})
 ```
 
 ## Installation
@@ -91,10 +91,9 @@ Roles are specified as atoms; e.g. `:admin` or `:editor`.
 
 A permission's subject and object constrain the scope of entities to which the permission applies, and may be specified as:
 
-  * `:all`; a special value meaning "no constraints" (this is the default)
-  * any other plain atom *except* `:any`, which has special meaning for permission filtering and query scoping
-  * any module atom, meaning "all structs of this module"
-  * any struct with an `id` key, meaning "this particular entity"
+  * `:all` - a special atom for granting or denying ALL of something
+  * module - any module that defines a struct with an `id` field
+  * entity - any struct with an `id` key; e.g. `%User{id: 123}`
 
 When you **grant** or **deny** roles, permissions are created. Rolex can then inspect the full set of "grant" and "deny" permissions to determine which roles, if any, are actually granted. Subject and object scopes are considered, and "deny" permissions override "grant" permissions.
 
@@ -138,7 +137,11 @@ from(t in Task) |> Rolex.where_granted_on(role: :admin, to: user)
 
 ## Granting, denying, revoking
 
-Examples to illustrate:
+`grant/1`, `deny/1`, and `revoke/1` take the full set of options, while "bang" and arity 2 flavors of each (e.g. `grant!/1`, `grant_to/2`) are available for piping and better semantics.
+
+Rolex also offers `Ecto.Multi` support with `multi_*` variants of each non-"bang" function.
+
+### Examples
 
 ```elixir
 # grant :admin to user -- [to: :all, on: all] is implied
@@ -169,12 +172,17 @@ from(t in Task)
 |> MyRepo.all()
 ```
 
-What if we wanted to see users to whom `:admin` has been granted on *any* task? This is very different from having a role on *all* tasks, so Rolex introduces `:any` (and friends) for this purpose:
+What if we wanted to see users to whom `:admin` has been granted on *any* task? This is very different from having a role on *all* tasks, so Rolex introduces `:any` for this purpose:
 
 ```elixir
+# only users with the :admin role on something
+from(u in User)
+|> Rolex.where_granted_to(role: :admin, on: :any)
+|> MyRepo.all()
+
 # only users on which :admin has been granted to at least one task
 from(u in User)
-|> Rolex.where_granted_to(role: :admin, on_any: Task)
+|> Rolex.where_granted_to(role: :admin, on: {:any, Task})
 |> MyRepo.all()
 ```
 
@@ -182,9 +190,9 @@ from(u in User)
 
 Querying the database every time a role question comes up is probably not optimal.
 
-Fortunately, permissions are just rules. Any arbitrary subject and object can be evaluated against a list of these rules to determine which (and whether any!) roles are granted. Rolex's query scoping functions just happen to do that evaluation on a database, at scale.
+Fortunately, permissions are just rules. Any arbitrary subject and object can be evaluated against a list of these rules to determine which (and whether any!) roles are granted.
 
-For fine-grained role checks in your application, Rolex also offers functions to do perform exactly the same evaluation on a list of permissions, in memory.
+Rolex's query scoping functions do that evaluation on a database, at scale. For fine-grained role checks in your application, Rolex also offers functions to do exactly the same evaluation on a list of permissions, in memory.
 
 ```elixir
 # load permissions granted to the user
