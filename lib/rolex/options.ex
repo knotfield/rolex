@@ -21,8 +21,6 @@ defmodule Rolex.Options do
 
   import Ecto.Changeset
 
-  alias Rolex.EctoTypes.Atom
-
   @all Application.compile_env(:rolex, :all_atom, :all)
   @any Application.compile_env(:rolex, :any_atom, :any)
 
@@ -31,10 +29,10 @@ defmodule Rolex.Options do
   """
   def changeset(action, opts \\ []) do
     case action do
-      :grant -> creating_changeset(opts)
-      :deny -> creating_changeset(opts)
-      :revoke -> revoking_changeset(opts)
-      :filter -> filtering_changeset(opts)
+      :grant -> changeset_for_grant_or_deny(opts)
+      :deny -> changeset_for_grant_or_deny(opts)
+      :revoke -> changeset_for_revoke(opts)
+      :filter -> changeset_for_filter(opts)
     end
   end
 
@@ -48,8 +46,8 @@ defmodule Rolex.Options do
       * `on` - `:all`, schema, or entity
 
   """
-  def creating_changeset(opts) do
-    types = %{role: Atom, to: :any, on: :any}
+  def changeset_for_grant_or_deny(opts) do
+    types = %{role: :any, to: :any, on: :any}
     fields = Map.keys(types)
 
     {%{}, types}
@@ -75,8 +73,8 @@ defmodule Rolex.Options do
         * `{:any, <schema>}` - will match ANY permission object of the named schema
 
   """
-  def revoking_changeset(opts) do
-    types = %{role: Atom, from: :any, on: :any}
+  def changeset_for_revoke(opts) do
+    types = %{role: :any, from: :any, on: :any}
     fields = Map.keys(types)
 
     {%{}, types}
@@ -102,8 +100,8 @@ defmodule Rolex.Options do
         * `{:any, <schema>}` - will match ANY permission object of the named type
 
   """
-  def filtering_changeset(opts) do
-    types = %{role: Atom, to: :any, on: :any}
+  def changeset_for_filter(opts) do
+    types = %{role: :any, to: :any, on: :any}
     fields = Map.keys(types)
 
     {%{}, types}
