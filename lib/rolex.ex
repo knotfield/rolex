@@ -38,9 +38,6 @@ defmodule Rolex do
     |> repo.all()
   end
 
-  defdelegate list_roles_granted_to(list, subject, opts \\ []), to: Queryable
-  defdelegate list_roles_granted_on(list, object, opts \\ []), to: Queryable
-
   # Querying and filtering
 
   defdelegate where_granted_to(query, opts \\ []), to: Queryable

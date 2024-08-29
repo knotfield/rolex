@@ -7,8 +7,8 @@ defmodule Rolex.Options do
   The grammar has three terms for scoping permissions:
 
       * `:all` - a special atom for granting or denying ALL of something
-      * module - any module that defines a struct with an `id` field
-      * entity - any struct with an `id` key; e.g. `%User{id: 123}`
+      * schema - any Ecto schema module
+      * entity - any Ecto schema entity; e.g. `%User{id: 123}`
 
   And only three* keywords:
 
@@ -23,6 +23,7 @@ defmodule Rolex.Options do
 
   alias Rolex.EctoTypes.Atom
 
+  @all Application.compile_env(:rolex, :all_atom, :all)
   @any Application.compile_env(:rolex, :any_atom, :any)
 
   @doc """
@@ -32,7 +33,7 @@ defmodule Rolex.Options do
     case action do
       :grant -> creating_changeset(opts)
       :deny -> creating_changeset(opts)
-      :revoke -> deleting_changeset(opts)
+      :revoke -> revoking_changeset(opts)
       :filter -> filtering_changeset(opts)
     end
   end
@@ -42,9 +43,9 @@ defmodule Rolex.Options do
 
   Options:
 
-      * `role` - an atom
-      * `to` - `:all`, a module, or a struct with an `id` key
-      * `on` - `:all`, a module, or a struct with an `id` key
+      * `role` - a plain atom naming a role
+      * `to` - `:all`, schema, or entity
+      * `on` - `:all`, schema, or entity
 
   """
   def creating_changeset(opts) do
@@ -53,8 +54,10 @@ defmodule Rolex.Options do
 
     {%{}, types}
     |> cast(to_atom_keyed_map(opts), fields)
-    |> reduce_over(fields, &validate_exclusion(&2, &1, [@any]))
     |> validate_required([:role, :to, :on])
+    |> validate_change_value_type(:role, [:plain_atom])
+    |> validate_change_value_type(:to, [:all, :schema, :entity])
+    |> validate_change_value_type(:on, [:all, :schema, :entity])
   end
 
   @doc """
@@ -62,23 +65,26 @@ defmodule Rolex.Options do
 
   Options:
 
-      * `role` - an atom
-      * `from` - `:all`, a module, a struct with an `id` key, or:
+      * `role` - a plain atom naming a role, or:
+        * `:any` - will match ANY permission role
+      * `from` - `:all`, schema, entity, or:
         * `:any` - will match ANY permission subject
-        * `{:any, <module>}` - will match ANY permission subject of the named type
-      * `on` - `:all`, a module, a struct with an `id` key, or:
+        * `{:any, <schema>}` - will match ANY permission subject of the named schema
+      * `on` - `:all`, schema, entity, or:
         * `:any` - will match ANY permission object
-        * `{:any, <module>}` - will match ANY permission object of the named type
+        * `{:any, <schema>}` - will match ANY permission object of the named schema
 
   """
-  def deleting_changeset(opts) do
+  def revoking_changeset(opts) do
     types = %{role: Atom, from: :any, on: :any}
     fields = Map.keys(types)
 
     {%{}, types}
     |> cast(to_atom_keyed_map(opts), fields)
-    |> reduce_over(fields, &validate_exclusion(&2, &1, [@any]))
     |> validate_required([:role, :from, :on])
+    |> validate_change_value_type(:role, [:any, :plain_atom])
+    |> validate_change_value_type(:from, [:all, :any, :schema, :any_tuple, :entity])
+    |> validate_change_value_type(:on, [:all, :any, :schema, :any_tuple, :entity])
   end
 
   @doc """
@@ -86,13 +92,14 @@ defmodule Rolex.Options do
 
   Options:
 
-      * `role` - an atom
-      * `from` - `:all`, a module, a struct with an `id` key, or:
+      * `role` - a plain atom naming a role, or:
+        * `:any` - will match ANY permission role
+      * `to` - `:all`, schema, entity, or:
         * `:any` - will match ANY permission subject
-        * `{:any, <module>}` - will match ANY permission subject of the named type
-      * `on` - `:all`, a module, a struct with an `id` key, or:
+        * `{:any, <schema>}` - will match ANY permission subject of the named type
+      * `on` - `:all`, schema, entity, or:
         * `:any` - will match ANY permission object
-        * `{:any, <module>}` - will match ANY permission object of the named type
+        * `{:any, <schema>}` - will match ANY permission object of the named type
 
   """
   def filtering_changeset(opts) do
@@ -101,16 +108,36 @@ defmodule Rolex.Options do
 
     {%{}, types}
     |> cast(to_atom_keyed_map(opts), fields)
-    |> validate_required([:role, :to, :on])
-  end
-
-  defp reduce_over(acc, enumerable, fun) do
-    enumerable |> Enum.reduce(acc, fun)
+    |> validate_change_value_type(:role, [:any, :plain_atom])
+    |> validate_change_value_type(:to, [:all, :any, :schema, :any_tuple, :entity])
+    |> validate_change_value_type(:on, [:all, :any, :schema, :any_tuple, :entity])
   end
 
   defp to_atom_keyed_map(enumerable) do
     enumerable
     |> Enum.map(fn {k, v} -> {to_string(k) |> String.to_atom(), v} end)
     |> Enum.into(%{})
+  end
+
+  defp validate_change_value_type(changeset, field, value_types) do
+    validate_change(changeset, field, fn _, value ->
+      if value_type(value) in value_types do
+        []
+      else
+        [{field, "is invalid"}]
+      end
+    end)
+  end
+
+  defp value_type(value) do
+    cond do
+      value == @all -> :all
+      value == @any -> :any
+      is_atom(value) and not function_exported?(value, :__info__, 1) -> :plain_atom
+      is_atom(value) and {:__schema__, 1} in value.__info__(:functions) -> :schema
+      is_atom(value) -> :module
+      is_struct(value) and value_type(value.__struct__) == :schema -> :entity
+      match?({@any, _}, value) and value_type(elem(value, 1)) == :schema -> :any_tuple
+    end
   end
 end

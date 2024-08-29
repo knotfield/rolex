@@ -92,8 +92,8 @@ Roles are specified as atoms; e.g. `:admin` or `:editor`.
 A permission's subject and object constrain the scope of entities to which the permission applies, and may be specified as:
 
   * `:all` - a special atom for granting or denying ALL of something
-  * module - any module that defines a struct with an `id` field
-  * entity - any struct with an `id` key; e.g. `%User{id: 123}`
+  * schema - any Ecto schema module
+  * entity - any Ecto schema entity; e.g. `%User{id: 123}`
 
 When you **grant** or **deny** roles, permissions are created. Rolex can then inspect the full set of "grant" and "deny" permissions to determine which roles, if any, are actually granted. Subject and object scopes are considered, and "deny" permissions override "grant" permissions.
 

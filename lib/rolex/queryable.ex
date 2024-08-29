@@ -9,18 +9,6 @@ defmodule Rolex.Queryable do
 
   @all Application.compile_env(:rolex, :all_atom, :all)
 
-  def list_roles_granted(list, opts) do
-    list |> Permission.filter_granted(opts) |> Enum.map(& &1.role)
-  end
-
-  def list_roles_granted_to(list, subject, opts \\ []) do
-    list |> list_roles_granted([{:to, subject} | opts])
-  end
-
-  def list_roles_granted_on(list, object, opts \\ []) do
-    list |> list_roles_granted([{:on, object} | opts])
-  end
-
   @doc """
   Scopes `query` to records that are the subject ("who") of a granted permission.
 
