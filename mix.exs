@@ -1,20 +1,26 @@
 defmodule Rolex.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/knotfield/rolex"
+  @version "0.1.0"
+
   def project do
     [
       app: :rolex,
-      description:
-        "Rolex is a role management library for Elixir apps. It is minimally intrusive, uses a GRANT/DENY/REVOKE permission model, and offers Ecto query scoping out of the box.",
-      licenses: ["MIT"],
-      links: %{github: "https://github.com/knotfield/rolex"},
-      source_url: %{github: "https://github.com/knotfield/rolex"},
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+
+      # Hex
+      description: "A role management library for Elixir apps",
+      package: package(),
+
+      # Docs
+      name: "Rolex",
+      docs: docs()
     ]
   end
 
@@ -41,6 +47,20 @@ defmodule Rolex.MixProject do
       {:mix_test_watch, "~> 1.0", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.0", only: :test},
       {:postgrex, ">= 0.0.0"}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url}
+    ]
+  end
+
+  defp docs do
+    [
+      source_ref: "v#{@version}",
+      source_url: @source_url
     ]
   end
 
