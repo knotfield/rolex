@@ -1,29 +1,28 @@
-defmodule Rolex.Options do
+defmodule Rolex.DSL do
   @moduledoc """
-  A module for validating options for permission-related actions.
+  Implements a small domain-specific language ("DSL") for scoping permissions.
 
-  These options make up a small domain-specific language ("DSL").
+  The DSL is defined by a handful of keyword options:
 
-  The grammar has three terms for scoping permissions:
+    * `role` - a plain atom naming the role
+    * `to` - specifies the subject scope; i.e. "who holds the role?"
+    * `on` - specifics the object scope; i.e. "on which resources does the role apply?
 
-      * `:all` - a special atom for granting or denying ALL of something
-      * schema - any Ecto schema module
-      * entity - any Ecto schema entity; e.g. `%User{id: 123}`
+  > When revoking permissions, `from` is used in place of `to`, because it reads more naturally.
 
-  And only three* keywords:
+  Subject and object scopes are specified using any of these values:
 
-      * `role: <atom>` - any atom except `:all` or `:any`
-      * `to: <subject>` - what scope is being granted the role?
-      * `on: <object>` - which resources are being granted?
+    * `:all` - a special atom for granting or denying ALL of something
+    * any Ecto schema module; e.g. `MyApp.Users.User`
+    * any Ecto schema entity; e.g. `%MyApp.Users.User{id: 123}`
 
-  * When revoking permissions, `from` is used in place of `to`
   """
 
   use Ecto.Schema
 
   import Ecto.Changeset
 
-  alias __MODULE__, as: Options
+  alias __MODULE__, as: DSL
 
   @all Application.compile_env(:rolex, :all_atom, :all)
   @any Application.compile_env(:rolex, :any_atom, :any)
@@ -39,21 +38,21 @@ defmodule Rolex.Options do
   def new(input \\ []) do
     cond do
       match?(%Ecto.Changeset{valid?: false}, input) -> {:error, :invalid_changeset}
-      match?(%Ecto.Changeset{data: %Options{}}, input) -> apply_changes(input)
+      match?(%Ecto.Changeset{data: %DSL{}}, input) -> apply_changes(input)
       match?(%Ecto.Changeset{}, input) -> {:error, :unexpected_changeset}
-      Enumerable.impl_for(input) -> struct(Options, to_atom_keyed_map(input))
+      Enumerable.impl_for(input) -> struct(DSL, to_atom_keyed_map(input))
     end
   end
 
   @doc """
-  Converts `options` from external DSL to internal params.
+  Converts `input` from external DSL to internal params.
 
   Returns an atom-keyed map on success, or an `{:error, reason}` tuple otherwise.
 
-  This is the bit that provides the boundary between the Rolex DSL (to/from/on) and actual permission fields.
+  This is the bit that provides the boundary between the Rolex DSL and the `c:Permission` schema.
   """
-  def to_permission_params(%Options{} = options) do
-    options
+  def to_permission_params(%DSL{} = dsl) do
+    dsl
     |> Map.from_struct()
     |> Enum.flat_map(fn
       {_, nil} ->
@@ -85,15 +84,17 @@ defmodule Rolex.Options do
   end
 
   def to_permission_params(input) do
-    with %Options{} = options <- new(input) do
-      to_permission_params(options)
+    with %DSL{} = dsl <- new(input) do
+      to_permission_params(dsl)
     end
   end
 
   @doc """
-  Validates options for performing `action`.
+  Returns a changeset for DSL options used to perform `action`.
+
+  Action may be any of `:grant`, `:deny`, `:revoke`, `:filter`.
   """
-  def changeset(action, opts \\ []) do
+  def changeset(action, opts) do
     case action do
       :grant -> changeset_for_grant_or_deny(opts)
       :deny -> changeset_for_grant_or_deny(opts)
@@ -103,9 +104,9 @@ defmodule Rolex.Options do
   end
 
   @doc """
-  Returns a changeset for options used when creating permissions.
+  Returns a changeset for DSL options used when granting or denying permissions.
 
-  Options:
+  DSL:
 
       * `role` - a plain atom naming a role
       * `to` - `:all`, schema, or entity
@@ -113,7 +114,7 @@ defmodule Rolex.Options do
 
   """
   def changeset_for_grant_or_deny(opts) do
-    %Options{}
+    %DSL{}
     |> cast(to_atom_keyed_map(opts), [:role, :to, :on])
     |> validate_required([:role, :to, :on])
     |> validate_change_value_type(:role, [:plain_atom])
@@ -124,7 +125,7 @@ defmodule Rolex.Options do
   @doc """
   Returns a changeset for options used when revoking permissions.
 
-  Options:
+  DSL:
 
       * `role` - a plain atom naming a role, or:
         * `:any` - will match ANY permission role
@@ -137,7 +138,7 @@ defmodule Rolex.Options do
 
   """
   def changeset_for_revoke(opts) do
-    %Options{}
+    %DSL{}
     |> cast(to_atom_keyed_map(opts), [:role, :from, :on])
     |> validate_required([:role, :from, :on])
     |> validate_change_value_type(:role, [:any, :plain_atom])
@@ -148,7 +149,7 @@ defmodule Rolex.Options do
   @doc """
   Returns a changeset for options used when filtering permissions.
 
-  Options:
+  DSL:
 
       * `role` - a plain atom naming a role, or:
         * `:any` - will match ANY permission role
@@ -164,7 +165,7 @@ defmodule Rolex.Options do
     types = %{role: :any, to: :any, on: :any}
     fields = Map.keys(types)
 
-    %Options{}
+    %DSL{}
     |> cast(to_atom_keyed_map(opts), fields)
     |> validate_change_value_type(:role, [:any, :plain_atom])
     |> validate_change_value_type(:to, [:all, :any, :schema, :any_tuple, :entity])

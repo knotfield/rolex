@@ -5,7 +5,7 @@ defmodule Rolex.Queryable do
 
   import Ecto.Query
 
-  alias Rolex.Options
+  alias Rolex.DSL
   alias Rolex.Permission
 
   @all Application.compile_env(:rolex, :all_atom, :all)
@@ -15,7 +15,7 @@ defmodule Rolex.Queryable do
 
   Permission scope itself is controlled by `opts`.
 
-  ## Options
+  ## DSL
 
       * :role - names the granted role
       * :on - the permission object ("what")
@@ -34,7 +34,7 @@ defmodule Rolex.Queryable do
 
   Permission scope itself is controlled by `opts`.
 
-  ## Options
+  ## DSL
 
       * :role - names the granted role
       * :to - the permission subject ("who")
@@ -50,8 +50,8 @@ defmodule Rolex.Queryable do
 
   defp where_granted(%Ecto.Query{} = query, opts, id_field) do
     params =
-      Options.changeset_for_filter(opts)
-      |> Options.to_permission_params()
+      DSL.changeset_for_filter(opts)
+      |> DSL.to_permission_params()
 
     permissions =
       Permission.base_query()

@@ -1,80 +1,80 @@
-defmodule Rolex.OptionsTest do
+defmodule Rolex.DSLTest do
   use Rolex.DataCase
 
-  import Rolex.Options
+  import Rolex.DSL
 
-  alias Rolex.Options
+  alias Rolex.DSL
 
   describe "to_permission_params/1" do
     test "maps [role: #{inspect(@any)}] to %{}" do
-      assert %{} == to_permission_params(%Options{role: @any})
+      assert %{} == to_permission_params(%DSL{role: @any})
     end
 
     test "maps [role: <role>] to %{role: <role>}" do
-      assert %{role: :some_role} == to_permission_params(%Options{role: :some_role})
+      assert %{role: :some_role} == to_permission_params(%DSL{role: :some_role})
     end
 
     test "maps [from: #{inspect(@all)}] to %{subject_type: #{inspect(@all)}, subject_id: #{inspect(@all)}}" do
-      assert %{subject_type: @all, subject_id: @all} == to_permission_params(%Options{from: @all})
+      assert %{subject_type: @all, subject_id: @all} == to_permission_params(%DSL{from: @all})
     end
 
     test "maps [from: #{inspect(@any)}] to %{}" do
-      assert %{} == to_permission_params(%Options{from: @any})
+      assert %{} == to_permission_params(%DSL{from: @any})
     end
 
     test "maps [from: <schema>] to %{subject_type: <schema>, subject_id: #{inspect(@all)}}" do
-      assert %{subject_type: User, subject_id: @all} == to_permission_params(%Options{from: User})
+      assert %{subject_type: User, subject_id: @all} == to_permission_params(%DSL{from: User})
     end
 
     test "maps [from: {#{inspect(@any)}, <schema>}] to %{subject_type: <schema>}" do
-      assert %{subject_type: User} == to_permission_params(%Options{from: {:any, User}})
+      assert %{subject_type: User} == to_permission_params(%DSL{from: {:any, User}})
     end
 
     test "maps [from: <entity>] to %{subject_type: <schema>, subject_id: <id>}" do
       assert %{subject_type: User, subject_id: 1} ==
-               to_permission_params(%Options{from: %User{id: 1}})
+               to_permission_params(%DSL{from: %User{id: 1}})
     end
 
     test "maps [to: #{inspect(@all)}] to %{subject_type: #{inspect(@all)}, subject_id: #{inspect(@all)}}" do
-      assert %{subject_type: @all, subject_id: @all} == to_permission_params(%Options{to: @all})
+      assert %{subject_type: @all, subject_id: @all} == to_permission_params(%DSL{to: @all})
     end
 
     test "maps [to: #{inspect(@any)}] to %{}" do
-      assert %{} == to_permission_params(%Options{to: @any})
+      assert %{} == to_permission_params(%DSL{to: @any})
     end
 
     test "maps [to: <schema>] to %{subject_type: <schema>, subject_id: #{inspect(@all)}}" do
-      assert %{subject_type: User, subject_id: @all} == to_permission_params(%Options{to: User})
+      assert %{subject_type: User, subject_id: @all} == to_permission_params(%DSL{to: User})
     end
 
     test "maps [to: {#{inspect(@any)}, <schema>}] to %{subject_type: <schema>}" do
-      assert %{subject_type: User} == to_permission_params(%Options{to: {:any, User}})
+      assert %{subject_type: User} == to_permission_params(%DSL{to: {:any, User}})
     end
 
     test "maps [to: <entity>] to %{subject_type: <schema>, subject_id: <id>}" do
       assert %{subject_type: User, subject_id: 1} ==
-               to_permission_params(%Options{to: %User{id: 1}})
+               to_permission_params(%DSL{to: %User{id: 1}})
     end
 
     test "maps [on: #{inspect(@all)}] to %{object_type: #{inspect(@all)}, object_id: #{inspect(@all)}}" do
-      assert %{object_type: @all, object_id: @all} == to_permission_params(%Options{on: @all})
+      assert %{object_type: @all, object_id: @all} == to_permission_params(%DSL{on: @all})
     end
 
     test "maps [on: #{inspect(@any)}] to %{}" do
-      assert %{} == to_permission_params(%Options{on: @any})
+      assert %{} == to_permission_params(%DSL{on: @any})
     end
 
     test "maps [on: <schema>] to %{object_type: <schema>, object_id: #{inspect(@all)}}" do
-      assert %{object_type: User, object_id: @all} == to_permission_params(%Options{on: User})
+      assert %{object_type: User, object_id: @all} == to_permission_params(%DSL{on: User})
     end
 
     test "maps [on: {#{inspect(@any)}, <schema>}] to %{object_type: <schema>}" do
-      assert %{object_type: User} == to_permission_params(%Options{on: {:any, User}})
+      assert %{object_type: User} == to_permission_params(%DSL{on: {:any, User}})
     end
 
     test "maps [on: <entity>] to %{object_type: <schema>, object_id: <id>}" do
       assert %{object_type: User, object_id: 1} ==
-               to_permission_params(%Options{on: %User{id: 1}})
+               to_permission_params(%DSL{on: %User{id: 1}})
     end
   end
 

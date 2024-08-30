@@ -4,7 +4,7 @@ defmodule Rolex do
   """
 
   alias Rolex.Control
-  alias Rolex.Options
+  alias Rolex.DSL
   alias Rolex.Permission
   alias Rolex.Queryable
 
@@ -15,8 +15,8 @@ defmodule Rolex do
   """
   def granted?(permissions, opts) do
     params =
-      Options.changeset_for_filter(opts)
-      |> Options.to_permission_params()
+      DSL.changeset_for_filter(opts)
+      |> DSL.to_permission_params()
 
     permissions |> Permission.filter_granted(params) |> Enum.any?()
   end
@@ -39,8 +39,8 @@ defmodule Rolex do
     repo = Application.fetch_env!(:rolex, :repo)
 
     params =
-      Options.changeset_for_filter(to: subject)
-      |> Options.to_permission_params()
+      DSL.changeset_for_filter(to: subject)
+      |> DSL.to_permission_params()
 
     Permission.base_query()
     |> Permission.where_granted(params)

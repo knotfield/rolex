@@ -3,7 +3,7 @@ defmodule Rolex.QueryableTest do
 
   import Rolex.Queryable
 
-  alias Rolex.Options
+  alias Rolex.DSL
 
   defp list_users_granted_to(opts) do
     from(q in User)
@@ -64,8 +64,8 @@ defmodule Rolex.QueryableTest do
   # gets granted roles both ways and returns them if they match -- or raises if they don't
   defp list_roles_granted(opts \\ []) do
     params =
-      Options.changeset_for_filter(opts)
-      |> Options.to_permission_params()
+      DSL.changeset_for_filter(opts)
+      |> DSL.to_permission_params()
 
     selected =
       Permission.base_query()

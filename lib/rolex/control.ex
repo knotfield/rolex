@@ -3,7 +3,7 @@ defmodule Rolex.Control do
   Provides functions for granting, denying, and revoking permissions.
   """
 
-  alias Rolex.Options
+  alias Rolex.DSL
   alias Rolex.Permission
 
   for verb <- [:grant, :deny] do
@@ -12,7 +12,7 @@ defmodule Rolex.Control do
 
     Returns `{:ok, %Permission{}}` on success.
 
-    See `c:Rolex.Options` for options.
+    See `c:Rolex.DSL` for options.
     """
     def unquote(:"#{verb}")(opts \\ []) do
       apply_to_repo(unquote(verb), opts)
@@ -23,7 +23,7 @@ defmodule Rolex.Control do
 
     Returns `%Permission{}` on success; raises an exception otherwise.
 
-    See `c:Rolex.Options` for options.
+    See `c:Rolex.DSL` for options.
     """
     def unquote(:"#{verb}!")(opts \\ []) do
       unquote(:"#{verb}")(opts) |> ok_result!()
@@ -34,7 +34,7 @@ defmodule Rolex.Control do
 
     Returns the updated multi.
 
-    See `c:Rolex.Options` for options.
+    See `c:Rolex.DSL` for options.
     """
     def unquote(:"multi_#{verb}")(multi \\ Ecto.Multi.new(), opts \\ []) do
       apply_to_multi(multi, unquote(verb), opts)
@@ -46,7 +46,7 @@ defmodule Rolex.Control do
 
       Returns `{:ok, noun}` on success.
 
-      See `c:Rolex.Options` for other options.
+      See `c:Rolex.DSL` for other options.
       """
       def unquote(:"#{verb}_#{opt}")(noun, opts \\ []) do
         with {:ok, %Permission{}} <- apply_to_repo(unquote(verb), [{unquote(opt), noun} | opts]) do
@@ -59,7 +59,7 @@ defmodule Rolex.Control do
 
       Returns `noun` on success; raises an exception otherwise.
 
-      See `c:Rolex.Options` for other options.
+      See `c:Rolex.DSL` for other options.
       """
       def unquote(:"#{verb}_#{opt}!")(noun, opts \\ []) do
         unquote(:"#{verb}_#{opt}")(noun, opts) |> ok_result!()
@@ -70,7 +70,7 @@ defmodule Rolex.Control do
 
       Returns the updated multi.
 
-      See `c:Rolex.Options` for other options.
+      See `c:Rolex.DSL` for other options.
       """
       def unquote(:"multi_#{verb}_#{opt}")(multi \\ Ecto.Multi.new(), noun, opts \\ []) do
         apply_to_multi(multi, unquote(verb), [{unquote(opt), noun} | opts])
@@ -83,7 +83,7 @@ defmodule Rolex.Control do
 
   Returns `{:ok, <number-of-permissions-deleted>}` on success, or {:error, changeset} otherwise.
 
-  See `c:Rolex.Options` for options.
+  See `c:Rolex.DSL` for options.
   """
   def revoke(opts \\ []) do
     with {count, _} when is_integer(count) <- apply_to_repo(:revoke, opts) do
@@ -96,7 +96,7 @@ defmodule Rolex.Control do
 
   Returns the number of permissions deleted on success; raises an exception otherwise.
 
-  See `c:Rolex.Options` for options.
+  See `c:Rolex.DSL` for options.
   """
   def revoke!(opts) do
     revoke(opts) |> ok_result!()
@@ -107,7 +107,7 @@ defmodule Rolex.Control do
 
   Returns the updated multi.
 
-  See `c:Rolex.Options` for options.
+  See `c:Rolex.DSL` for options.
   """
   def multi_revoke(%Ecto.Multi{} = multi, opts) do
     apply_to_multi(multi, :revoke, opts)
@@ -119,7 +119,7 @@ defmodule Rolex.Control do
 
     Returns `{:ok, noun}` on success.
 
-    See `c:Rolex.Options` for other options.
+    See `c:Rolex.DSL` for other options.
     """
     def unquote(:"revoke_#{opt}")(noun, opts \\ []) do
       with {:ok, _} <- revoke([{unquote(opt), noun} | opts]) do
@@ -132,7 +132,7 @@ defmodule Rolex.Control do
 
     Returns the number of permissions deleted on success; raises an exception otherwise.
 
-    See `c:Rolex.Options` for other options.
+    See `c:Rolex.DSL` for other options.
     """
     def unquote(:"revoke_#{opt}!")(noun, opts \\ []) do
       revoke([{unquote(opt), noun} | opts]) |> ok_result!()
@@ -143,7 +143,7 @@ defmodule Rolex.Control do
 
     Returns the updated multi.
 
-    See `c:Rolex.Options` for other options.
+    See `c:Rolex.DSL` for other options.
     """
     def unquote(:"multi_revoke_#{opt}")(%Ecto.Multi{} = multi, noun, opts \\ []) do
       multi_revoke(multi, [{unquote(opt), noun} | opts])
@@ -153,7 +153,7 @@ defmodule Rolex.Control do
   defp ok_result!({:ok, result}), do: result
 
   defp validate_options(operation, opts) do
-    case Options.changeset(operation, opts) do
+    case DSL.changeset(operation, opts) do
       %{valid?: true} = changeset -> {:ok, changeset}
       changeset -> {:error, changeset}
     end
@@ -162,7 +162,7 @@ defmodule Rolex.Control do
   # uses apply/3 to execute an operation against the configured repo
   defp apply_to_repo(operation, opts) do
     with {:ok, changeset} <- validate_options(operation, opts),
-         params <- Options.to_permission_params(changeset) do
+         params <- DSL.to_permission_params(changeset) do
       {function, args} = operation_tuple(operation, params)
 
       Application.fetch_env!(:rolex, :repo)
@@ -173,7 +173,7 @@ defmodule Rolex.Control do
   # uses apply/3 to add the indicated operation to the multi
   defp apply_to_multi(multi, operation, opts) do
     with {:ok, changeset} <- validate_options(operation, opts),
-         params <- Options.to_permission_params(changeset) do
+         params <- DSL.to_permission_params(changeset) do
       {function, args} = operation_tuple(operation, params)
       apply(Ecto.Multi, function, [multi, make_ref() | args])
     end
