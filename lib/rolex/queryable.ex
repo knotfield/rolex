@@ -5,6 +5,7 @@ defmodule Rolex.Queryable do
 
   import Ecto.Query
 
+  alias Rolex.Options
   alias Rolex.Permission
 
   @all Application.compile_env(:rolex, :all_atom, :all)
@@ -48,9 +49,13 @@ defmodule Rolex.Queryable do
   end
 
   defp where_granted(%Ecto.Query{} = query, opts, id_field) do
+    params =
+      Options.changeset_for_filter(opts)
+      |> Options.to_permission_params()
+
     permissions =
       Permission.base_query()
-      |> Permission.where_granted(opts)
+      |> Permission.where_granted(params)
       |> distinct([p], field(p, ^id_field))
 
     from(q in query,

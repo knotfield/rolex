@@ -1,9 +1,10 @@
 defmodule Rolex do
   @moduledoc """
-  Documentation for `Rolex`.
+  The main entry point for interacting with Rolex.
   """
 
   alias Rolex.Control
+  alias Rolex.Options
   alias Rolex.Permission
   alias Rolex.Queryable
 
@@ -13,7 +14,11 @@ defmodule Rolex do
   Returns true if any of the given permissions meeting the conditions in `opts` are granted.
   """
   def granted?(permissions, opts) do
-    permissions |> Permission.filter_granted(opts) |> Enum.any?()
+    params =
+      Options.changeset_for_filter(opts)
+      |> Options.to_permission_params()
+
+    permissions |> Permission.filter_granted(params) |> Enum.any?()
   end
 
   @doc """
@@ -33,8 +38,12 @@ defmodule Rolex do
   def load_permissions_granted_to(subject) do
     repo = Application.fetch_env!(:rolex, :repo)
 
+    params =
+      Options.changeset_for_filter(to: subject)
+      |> Options.to_permission_params()
+
     Permission.base_query()
-    |> Permission.where_granted(to: subject)
+    |> Permission.where_granted(params)
     |> repo.all()
   end
 

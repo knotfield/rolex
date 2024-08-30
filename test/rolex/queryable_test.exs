@@ -3,6 +3,8 @@ defmodule Rolex.QueryableTest do
 
   import Rolex.Queryable
 
+  alias Rolex.Options
+
   defp list_users_granted_to(opts) do
     from(q in User)
     |> where_granted_to(opts)
@@ -61,9 +63,13 @@ defmodule Rolex.QueryableTest do
 
   # gets granted roles both ways and returns them if they match -- or raises if they don't
   defp list_roles_granted(opts \\ []) do
+    params =
+      Options.changeset_for_filter(opts)
+      |> Options.to_permission_params()
+
     selected =
       Permission.base_query()
-      |> Permission.where_granted(opts)
+      |> Permission.where_granted(params)
       |> select([p], p.role)
       |> order_by([p], p.role)
       |> Repo.all()
@@ -71,7 +77,7 @@ defmodule Rolex.QueryableTest do
     filtered =
       Permission.base_query()
       |> Repo.all()
-      |> Permission.filter_granted(opts)
+      |> Permission.filter_granted(params)
       |> Enum.map(& &1.role)
       |> Enum.sort()
 

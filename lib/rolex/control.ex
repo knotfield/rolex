@@ -154,15 +154,16 @@ defmodule Rolex.Control do
 
   defp validate_options(operation, opts) do
     case Options.changeset(operation, opts) do
-      %{valid?: true} -> :ok
+      %{valid?: true} = changeset -> {:ok, changeset}
       changeset -> {:error, changeset}
     end
   end
 
   # uses apply/3 to execute an operation against the configured repo
   defp apply_to_repo(operation, opts) do
-    with :ok <- validate_options(operation, opts) do
-      {function, args} = operation_tuple(operation, opts)
+    with {:ok, changeset} <- validate_options(operation, opts),
+         params <- Options.to_permission_params(changeset) do
+      {function, args} = operation_tuple(operation, params)
 
       Application.fetch_env!(:rolex, :repo)
       |> apply(function, args)
@@ -171,8 +172,9 @@ defmodule Rolex.Control do
 
   # uses apply/3 to add the indicated operation to the multi
   defp apply_to_multi(multi, operation, opts) do
-    with :ok <- validate_options(operation, opts) do
-      {function, args} = operation_tuple(operation, opts)
+    with {:ok, changeset} <- validate_options(operation, opts),
+         params <- Options.to_permission_params(changeset) do
+      {function, args} = operation_tuple(operation, params)
       apply(Ecto.Multi, function, [multi, make_ref() | args])
     end
   end
@@ -189,7 +191,6 @@ defmodule Rolex.Control do
   end
 
   defp operation_tuple(:revoke, opts) do
-    opts = Keyword.delete(opts, :verb)
     query = Permission.base_query() |> Permission.where_equal(opts)
     {:delete_all, [query]}
   end

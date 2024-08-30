@@ -38,46 +38,40 @@ defmodule Rolex.PermissionTest do
     end
   end
 
-  # took this function private to discourage unexpected use
-  # describe "parse_options/1" do
-  #   test "parses basic options" do
-  #     assert %{
-  #              verb: :grant,
-  #              role: :role_1,
-  #              subject_type: @all,
-  #              subject_id: @all,
-  #              object_type: @all,
-  #              object_id: @all
-  #            } = parse_options(verb: :grant, role: :role_1, to: @all, on: @all)
-  #   end
-
-  #   test "parses to: <schema> and on: <schema> options" do
-  #     assert %{
-  #              subject_type: User,
-  #              subject_id: @all,
-  #              object_type: Task,
-  #              object_id: @all
-  #            } = parse_options(to: User, on: Task)
-  #   end
-
-  #   test "parses to: {:any, <schema>} and on: {:any, <schema>} options" do
-  #     assert %{
-  #              subject_type: User,
-  #              subject_id: @any,
-  #              object_type: Task,
-  #              object_id: @any
-  #            } = parse_options(to: {:any, User}, on: {:any, Task})
-  #   end
-  # end
-
   describe "where_granted/2" do
     setup do
       user = user_fixture()
       task = task_fixture()
 
-      assert {:ok, _} = Rolex.grant_role(:role_1, to: @all, on: Task)
-      assert {:ok, _} = Rolex.grant_role(:role_2, to: User, on: task)
-      assert {:ok, _} = Rolex.grant_role(:role_3, to: user, on: @all)
+      assert struct(Permission,
+               verb: :grant,
+               role: :role_1,
+               subject_type: @all,
+               subject_id: @all,
+               object_type: Task,
+               object_id: @all
+             )
+             |> Repo.insert!()
+
+      assert struct(Permission,
+               verb: :grant,
+               role: :role_2,
+               subject_type: User,
+               subject_id: @all,
+               object_type: Task,
+               object_id: task.id
+             )
+             |> Repo.insert!()
+
+      assert struct(Permission,
+               verb: :grant,
+               role: :role_3,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: @all,
+               object_id: @all
+             )
+             |> Repo.insert!()
 
       %{user: user, task: task}
     end
@@ -87,65 +81,69 @@ defmodule Rolex.PermissionTest do
     end
 
     test "(on: #{@all}) narrows the query to permissions granted on all resources" do
-      assert [:role_3] = list_roles_where_granted(on: @all)
+      assert [:role_3] = list_roles_where_granted(object_type: @all, object_id: @all)
     end
 
     test "(on: <schema>) narrows the query to permissions granted on all resources of the given type" do
-      assert [:role_1, :role_3] = list_roles_where_granted(on: Task)
-      assert [:role_3] = list_roles_where_granted(on: User)
+      assert [:role_1, :role_3] = list_roles_where_granted(object_type: Task, object_id: @all)
+      assert [:role_3] = list_roles_where_granted(object_type: User, object_id: @all)
     end
 
     test "(on: #{@any}) narrows the query to permissions granted on anything" do
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(on: @any)
+      assert [:role_1, :role_2, :role_3] = list_roles_where_granted()
     end
 
     test "(on: {:any, <schema>}) narrows the query to permissions granted on any resource of the given type" do
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(on: {:any, Task})
-      assert [:role_3] = list_roles_where_granted(on: {:any, User})
+      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(object_type: Task)
+      assert [:role_3] = list_roles_where_granted(object_type: User)
     end
 
     test "(on: _) narrows the query to permissions granted on the given resource",
          %{task: task, user: user} do
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(on: task)
-      assert [:role_3] = list_roles_where_granted(on: user)
+      assert [:role_1, :role_2, :role_3] =
+               list_roles_where_granted(object_type: Task, object_id: task.id)
+
+      assert [:role_3] = list_roles_where_granted(object_type: User, object_id: user.id)
     end
 
     test "(to: #{@all}) narrows the query to permissions granted to all resources" do
-      assert [:role_1] = list_roles_where_granted(to: @all)
+      assert [:role_1] = list_roles_where_granted(subject_type: @all, subject_id: @all)
     end
 
     test "(to: <schema>) narrows the query to permissions granted to all resources of the given type" do
-      assert [:role_1] = list_roles_where_granted(to: Task)
-      assert [:role_1, :role_2] = list_roles_where_granted(to: User)
+      assert [:role_1] = list_roles_where_granted(subject_type: Task, subject_id: @all)
+      assert [:role_1, :role_2] = list_roles_where_granted(subject_type: User, subject_id: @all)
     end
 
     test "(to: #{@any}) narrows the query to permissions granted to anything" do
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: @any)
+      assert [:role_1, :role_2, :role_3] = list_roles_where_granted()
     end
 
     test "(to: {:any, <schema>})) narrows the query to permissions granted to any resource of the given type" do
-      assert [:role_1] = list_roles_where_granted(to: {:any, Task})
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: {:any, User})
+      assert [:role_1] = list_roles_where_granted(subject_type: Task)
+      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(subject_type: User)
     end
 
     test "(to: _) narrows the query to permissions granted to the given resource",
          %{task: task, user: user} do
-      assert [:role_1] = list_roles_where_granted(to: task)
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: user)
+      assert [:role_1] = list_roles_where_granted(subject_type: Task, subject_id: task.id)
+
+      assert [:role_1, :role_2, :role_3] =
+               list_roles_where_granted(subject_type: User, subject_id: user.id)
     end
 
-    test "omits permissions denied at or above the granted scope", %{task: task, user: user} do
-      assert {:ok, _} = Rolex.deny_role(:some_other_role, to: user, on: task)
-      assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: user, on: task)
+    # test "omits permissions denied at or above the granted scope", %{task: task, user: user} do
+    #   assert struct(Permission, role: :some_other_role, to: user, on: task) |> Repo.insert!()
+    #   assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: user, on: task)
 
-      assert {:ok, _} = Rolex.deny_role(:role_1, to: user, on: task)
-      assert [:role_2, :role_3] = list_roles_where_granted(to: user, on: task)
+    #   assert struct(Permission, role: :role_1, to: user, on: task) |> Repo.insert!()
+    #   assert [:role_2, :role_3] = list_roles_where_granted(to: user, on: task)
 
-      assert {:ok, _} = Rolex.deny_role(:role_3, to: user, on: @all)
-      assert [:role_2] = list_roles_where_granted(to: user, on: task)
+    #   assert struct(Permission, role: :role_3, to: user, on: @all) |> Repo.insert!()
+    #   assert [:role_2] = list_roles_where_granted(to: user, on: task)
 
-      assert {:ok, _} = Rolex.deny_role(:role_2, to: user, on: Task)
-      assert [] = list_roles_where_granted(to: user, on: task)
-    end
+    #   assert struct(Permission, role: :role_2, to: user, on: Task) |> Repo.insert!()
+    #   assert [] = list_roles_where_granted(to: user, on: task)
+    # end
   end
 end

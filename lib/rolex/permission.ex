@@ -63,12 +63,10 @@ defmodule Rolex.Permission do
     timestamps()
   end
 
-  def changeset(data, params \\ [])
+  def changeset(data, params \\ %{})
 
   @fields ~w(verb role subject_type subject_id object_type object_id)a
-  def changeset(%Permission{} = data, opts) do
-    params = parse_options(opts)
-
+  def changeset(%Permission{} = data, params) do
     data
     |> cast(params, @fields)
     |> validate_required(@fields)
@@ -83,50 +81,19 @@ defmodule Rolex.Permission do
   @doc """
   Returns a changeset for creating a grant permission.
   """
-  def grant_changeset(opts) do
+  def grant_changeset(params) do
     %Permission{verb: :grant}
-    |> changeset(opts)
+    |> changeset(params)
     |> validate_inclusion(:verb, [:grant])
   end
 
   @doc """
   Returns a changeset for creating a deny permission.
   """
-  def deny_changeset(opts) do
+  def deny_changeset(params) do
     %Permission{verb: :deny}
-    |> changeset(opts)
+    |> changeset(params)
     |> validate_inclusion(:verb, [:deny])
-  end
-
-  # this is the bit that hides the implementation details of our friendly to/from/on DSL
-  defp parse_options(opts, overriding_opts \\ []) do
-    [opts, overriding_opts]
-    |> Enum.map(&to_atom_keyed_map/1)
-    |> then(fn [a, b] -> Map.merge(a, b) end)
-    |> Enum.flat_map(fn
-      {_, @any} -> []
-      {:verb, verb} when verb in [:grant, :deny] -> [verb: verb]
-      {:role, role} when is_atom(role) -> [role: role]
-      {:from, @all} -> [subject_type: @all, subject_id: @all]
-      {:from, {@any, type}} when is_atom(type) -> [subject_type: type]
-      {:from, type} when is_atom(type) -> [subject_type: type, subject_id: @all]
-      {:from, %{id: id, __struct__: type}} -> [subject_type: type, subject_id: id]
-      {:to, @all} -> [subject_type: @all, subject_id: @all]
-      {:to, {@any, type}} when is_atom(type) -> [subject_type: type]
-      {:to, type} when is_atom(type) -> [subject_type: type, subject_id: @all]
-      {:to, %{id: id, __struct__: type}} -> [subject_type: type, subject_id: id]
-      {:on, @all} -> [object_type: @all, object_id: @all]
-      {:on, {@any, type}} when is_atom(type) -> [object_type: type]
-      {:on, type} when is_atom(type) -> [object_type: type, object_id: @all]
-      {:on, %{id: id, __struct__: type}} -> [object_type: type, object_id: id]
-    end)
-    |> Enum.into(%{})
-  end
-
-  defp to_atom_keyed_map(enumerable) do
-    enumerable
-    |> Enum.map(fn {k, v} -> {to_string(k) |> String.to_atom(), v} end)
-    |> Enum.into(%{})
   end
 
   @doc """
@@ -138,17 +105,10 @@ defmodule Rolex.Permission do
 
   @doc """
   Narrows a permission query to grant permissions that are not overridden by a deny permission.
-
-  ## Options
-
-      * :role - names the granted role
-      * :to - the permission subject ("who")
-      * :on - the permission object ("what")
-
   """
-  def where_granted(%Ecto.Query{from: %{as: parent_binding}} = query, opts \\ []) do
+  def where_granted(%Ecto.Query{from: %{as: parent_binding}} = query, params \\ %{}) do
     query
-    |> where_equal_or_all(opts)
+    |> where_equal_or_all(params)
     |> where(
       [g],
       g.verb == :grant and
@@ -162,17 +122,10 @@ defmodule Rolex.Permission do
 
   @doc """
   Narrows a list of permissions to grant permissions that are not overridden by a deny permission.
-
-  ## Options
-
-      * :role - names the granted role
-      * :to - the permission subject ("who")
-      * :on - the permission object ("what")
-
   """
-  def filter_granted(list, opts \\ []) do
+  def filter_granted(list, params \\ %{}) do
     list
-    |> filter_equal_or_all(opts)
+    |> filter_equal_or_all(params)
     |> Enum.filter(&(&1.verb == :grant))
     |> Enum.reject(fn g ->
       list
@@ -183,29 +136,20 @@ defmodule Rolex.Permission do
   end
 
   @doc """
-  Narrows a permission query to those that exactly match the passed parameters.
+  Narrows a permission query to those that match the passed parameters.
 
   Used to target specific records, as when revoking permissions.
-
-  ## Params
-
-      * :role - names the granted role
-      * :to - the permission subject ("who")
-      * :on - the permission object ("what")
-
   """
-  def where_equal(%Ecto.Query{} = query, opts \\ []) do
-    parse_options(opts)
-    |> Enum.reduce(query, fn
+  def where_equal(%Ecto.Query{} = query, params \\ %{}) do
+    Enum.reduce(params, query, fn
       {field, value}, query -> where(query, [q], field(q, ^field) == ^value)
     end)
   end
 
   # Narrows a permission query to those that meet or supersede the passed parameters.
   # Used to identify permissions to be considered, as when checking granted roles.
-  defp where_equal_or_all(%Ecto.Query{} = query, opts) do
-    parse_options(opts)
-    |> Enum.reduce(query, fn
+  defp where_equal_or_all(%Ecto.Query{} = query, params) do
+    Enum.reduce(params, query, fn
       {_, @any}, query -> query
       {field, value}, query -> where(query, [q], field(q, ^field) in [^@all, ^value])
     end)
@@ -213,9 +157,7 @@ defmodule Rolex.Permission do
 
   # Narrows a list of permissions to those that meet or supersede the passed parameters.
   # Used to identify permissions to be considered, as when checking granted roles.
-  defp filter_equal_or_all(list, opts) do
-    params = parse_options(opts)
-
+  defp filter_equal_or_all(list, params) do
     list
     |> Enum.filter(fn permission ->
       Enum.all?(params, fn

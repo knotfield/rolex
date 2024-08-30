@@ -19,10 +19,76 @@ defmodule Rolex.Options do
   * When revoking permissions, `from` is used in place of `to`
   """
 
+  use Ecto.Schema
+
   import Ecto.Changeset
+
+  alias __MODULE__, as: Options
 
   @all Application.compile_env(:rolex, :all_atom, :all)
   @any Application.compile_env(:rolex, :any_atom, :any)
+
+  @primary_key false
+  embedded_schema do
+    field(:role, :any, virtual: true)
+    field(:from, :any, virtual: true, source: :subject)
+    field(:to, :any, virtual: true, source: :subject)
+    field(:on, :any, virtual: true, source: :object)
+  end
+
+  def new(input \\ []) do
+    cond do
+      match?(%Ecto.Changeset{valid?: false}, input) -> {:error, :invalid_changeset}
+      match?(%Ecto.Changeset{data: %Options{}}, input) -> apply_changes(input)
+      match?(%Ecto.Changeset{}, input) -> {:error, :unexpected_changeset}
+      Enumerable.impl_for(input) -> struct(Options, to_atom_keyed_map(input))
+    end
+  end
+
+  @doc """
+  Converts `options` from external DSL to internal params.
+
+  Returns an atom-keyed map on success, or an `{:error, reason}` tuple otherwise.
+
+  This is the bit that provides the boundary between the Rolex DSL (to/from/on) and actual permission fields.
+  """
+  def to_permission_params(%Options{} = options) do
+    options
+    |> Map.from_struct()
+    |> Enum.flat_map(fn
+      {_, nil} ->
+        []
+
+      {_, @any} ->
+        []
+
+      {:role, role} ->
+        [role: role]
+
+      {key, value} when key in [:to, :from] ->
+        case value do
+          @all -> [subject_type: @all, subject_id: @all]
+          {@any, type} -> [subject_type: type]
+          %{id: id, __struct__: type} -> [subject_type: type, subject_id: id]
+          type -> [subject_type: type, subject_id: @all]
+        end
+
+      {:on, value} ->
+        case value do
+          @all -> [object_type: @all, object_id: @all]
+          {@any, type} -> [object_type: type]
+          %{id: id, __struct__: type} -> [object_type: type, object_id: id]
+          type -> [object_type: type, object_id: @all]
+        end
+    end)
+    |> Enum.into(%{})
+  end
+
+  def to_permission_params(input) do
+    with %Options{} = options <- new(input) do
+      to_permission_params(options)
+    end
+  end
 
   @doc """
   Validates options for performing `action`.
@@ -47,11 +113,8 @@ defmodule Rolex.Options do
 
   """
   def changeset_for_grant_or_deny(opts) do
-    types = %{role: :any, to: :any, on: :any}
-    fields = Map.keys(types)
-
-    {%{}, types}
-    |> cast(to_atom_keyed_map(opts), fields)
+    %Options{}
+    |> cast(to_atom_keyed_map(opts), [:role, :to, :on])
     |> validate_required([:role, :to, :on])
     |> validate_change_value_type(:role, [:plain_atom])
     |> validate_change_value_type(:to, [:all, :schema, :entity])
@@ -74,11 +137,8 @@ defmodule Rolex.Options do
 
   """
   def changeset_for_revoke(opts) do
-    types = %{role: :any, from: :any, on: :any}
-    fields = Map.keys(types)
-
-    {%{}, types}
-    |> cast(to_atom_keyed_map(opts), fields)
+    %Options{}
+    |> cast(to_atom_keyed_map(opts), [:role, :from, :on])
     |> validate_required([:role, :from, :on])
     |> validate_change_value_type(:role, [:any, :plain_atom])
     |> validate_change_value_type(:from, [:all, :any, :schema, :any_tuple, :entity])
@@ -104,7 +164,7 @@ defmodule Rolex.Options do
     types = %{role: :any, to: :any, on: :any}
     fields = Map.keys(types)
 
-    {%{}, types}
+    %Options{}
     |> cast(to_atom_keyed_map(opts), fields)
     |> validate_change_value_type(:role, [:any, :plain_atom])
     |> validate_change_value_type(:to, [:all, :any, :schema, :any_tuple, :entity])
