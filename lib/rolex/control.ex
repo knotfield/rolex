@@ -8,82 +8,91 @@ defmodule Rolex.Control do
 
   for verb <- [:grant, :deny] do
     @doc """
-    Creates a role-#{verb}ing permission with the given options.
+    Creates a role-#{verb}ing `m:Rolex.Permission` from DSL options.
 
-    Returns `{:ok, %Permission{}}` on success.
+    Returns `{:ok, permission}` on success, or `{:error, reason}` otherwise.
 
-    See `c:Rolex.DSL` for options.
+    See `m:Rolex.DSL` for options.
     """
     def unquote(:"#{verb}")(opts \\ []) do
       apply_to_repo(unquote(verb), opts)
     end
 
     @doc """
-    Creates a role-#{verb}ing permission.
+    Creates a role-#{verb}ing `m:Rolex.Permission` from DSL options.
 
-    Returns `%Permission{}` on success; raises an exception otherwise.
+    Returns the permission on success, or raises an exception otherwise.
 
-    See `c:Rolex.DSL` for options.
+    See `m:Rolex.DSL` for options.
     """
     def unquote(:"#{verb}!")(opts \\ []) do
       unquote(:"#{verb}")(opts) |> ok_result!()
     end
 
     @doc """
-    Adds a multi operation to create a role-#{verb}ing permission.
+    Adds a multi operation to create a role-#{verb}ing `m:Rolex.Permission`.
 
     Returns the updated multi.
 
-    See `c:Rolex.DSL` for options.
+    See `m:Rolex.DSL` for options.
     """
-    def unquote(:"multi_#{verb}")(multi \\ Ecto.Multi.new(), opts \\ []) do
+    def unquote(:"multi_#{verb}")(%Ecto.Multi{} = multi, opts \\ []) do
       apply_to_multi(multi, unquote(verb), opts)
     end
 
-    for opt <- [:role, :to, :on] do
+    for {opt, varname} <- [role: :role, to: :subject_scope, on: :object_scope] do
       @doc """
-      Creates a role-#{verb}ing permission, prefilling `[#{opt}: noun]`.
+      Creates a role-#{verb}ing `m:Rolex.Permission` from DSL options, prefilling `#{opt}: #{varname}`.
 
-      Returns `{:ok, noun}` on success.
+      Returns `{:ok, #{varname}}` on success.
 
-      See `c:Rolex.DSL` for other options.
+      See `m:Rolex.DSL` for other options.
       """
-      def unquote(:"#{verb}_#{opt}")(noun, opts \\ []) do
-        with {:ok, %Permission{}} <- apply_to_repo(unquote(verb), [{unquote(opt), noun} | opts]) do
-          {:ok, noun}
+      def unquote(:"#{verb}_#{opt}")(unquote(Macro.var(varname, nil)), opts \\ []) do
+        with {:ok, %Permission{}} <-
+               apply_to_repo(unquote(verb), [
+                 {unquote(opt), unquote(Macro.var(varname, nil))} | opts
+               ]) do
+          {:ok, unquote(Macro.var(varname, nil))}
         end
       end
 
       @doc """
-      Creates a role-#{verb}ing permission, prefilling `[#{opt}: noun]`.
+      Creates a role-#{verb}ing `m:Rolex.Permission` from DSL options, prefilling `#{opt}: #{varname}`.
 
-      Returns `noun` on success; raises an exception otherwise.
+      Returns `#{varname}` on success, or raises an exception otherwise.
 
-      See `c:Rolex.DSL` for other options.
+      See `m:Rolex.DSL` for other options.
       """
-      def unquote(:"#{verb}_#{opt}!")(noun, opts \\ []) do
-        unquote(:"#{verb}_#{opt}")(noun, opts) |> ok_result!()
+      def unquote(:"#{verb}_#{opt}!")(unquote(Macro.var(varname, nil)), opts \\ []) do
+        unquote(:"#{verb}_#{opt}")(unquote(Macro.var(varname, nil)), opts) |> ok_result!()
       end
 
       @doc """
-      Adds a multi operation to create a role-#{verb}ing permission, prefilling `[#{opt}: noun]`.
+      Adds a multi operation to create a role-#{verb}ing `m:Rolex.Permission` from DSL options, prefilling `#{opt}: #{varname}`.
 
       Returns the updated multi.
 
-      See `c:Rolex.DSL` for other options.
+      See `m:Rolex.DSL` for other options.
       """
-      def unquote(:"multi_#{verb}_#{opt}")(multi \\ Ecto.Multi.new(), noun, opts \\ []) do
-        apply_to_multi(multi, unquote(verb), [{unquote(opt), noun} | opts])
+      def unquote(:"multi_#{verb}_#{opt}")(
+            %Ecto.Multi{} = multi,
+            unquote(Macro.var(varname, nil)),
+            opts \\ []
+          ) do
+        apply_to_multi(multi, unquote(verb), [
+          {unquote(opt), unquote(Macro.var(varname, nil))} | opts
+        ])
       end
     end
   end
 
   @doc """
-  Deletes all permissions matching the given options.
+  Deletes all `m:Rolex.Permission`s matching the given DSL options.
 
   Returns `{:ok, <number-of-permissions-deleted>}` on success, or {:error, changeset} otherwise.
 
-  See `c:Rolex.DSL` for options.
+  See `m:Rolex.DSL` for options.
   """
   def revoke(opts \\ []) do
     with {count, _} when is_integer(count) <- apply_to_repo(:revoke, opts) do
@@ -92,61 +101,65 @@ defmodule Rolex.Control do
   end
 
   @doc """
-  Deletes all permissions matching the given options exactly.
+  Deletes all `m:Rolex.Permission`s matching the given DSL options.
 
-  Returns the number of permissions deleted on success; raises an exception otherwise.
+  Returns the number of permissions deleted on success, or raises an exception otherwise.
 
-  See `c:Rolex.DSL` for options.
+  See `m:Rolex.DSL` for options.
   """
   def revoke!(opts) do
     revoke(opts) |> ok_result!()
   end
 
   @doc """
-  Adds an operation to delete all permissions matching the given options exactly.
+  Adds an operation to delete all `m:Rolex.Permission`s matching the given DSL options.
 
   Returns the updated multi.
 
-  See `c:Rolex.DSL` for options.
+  See `m:Rolex.DSL` for options.
   """
   def multi_revoke(%Ecto.Multi{} = multi, opts) do
     apply_to_multi(multi, :revoke, opts)
   end
 
-  for opt <- [:role, :from, :on] do
+  for {opt, varname} <- [role: :role, from: :subject_scope, on: :object_scope] do
     @doc """
-    Deletes all permissions matching the given options exactly, prefilling `[#{opt}: noun]`.
+    Deletes all `m:Rolex.Permission`s matching the given DSL options, prefilling `#{opt}: #{varname}`.
 
-    Returns `{:ok, noun}` on success.
+    Returns `{:ok, #{varname}}` on success.
 
-    See `c:Rolex.DSL` for other options.
+    See `m:Rolex.DSL` for other options.
     """
-    def unquote(:"revoke_#{opt}")(noun, opts \\ []) do
-      with {:ok, _} <- revoke([{unquote(opt), noun} | opts]) do
-        {:ok, noun}
+    def unquote(:"revoke_#{opt}")(unquote(Macro.var(varname, nil)), opts \\ []) do
+      with {:ok, _} <- revoke([{unquote(opt), unquote(Macro.var(varname, nil))} | opts]) do
+        {:ok, unquote(Macro.var(varname, nil))}
       end
     end
 
     @doc """
-    Deletes all permissions matching the given options exactly, prefilling `[#{opt}: noun]`.
+    Deletes all `m:Rolex.Permission`s matching the given DSL options, prefilling `#{opt}: #{varname}`.
 
-    Returns the number of permissions deleted on success; raises an exception otherwise.
+    Returns the number of permissions deleted on success, or raises an exception otherwise.
 
-    See `c:Rolex.DSL` for other options.
+    See `m:Rolex.DSL` for other options.
     """
-    def unquote(:"revoke_#{opt}!")(noun, opts \\ []) do
-      revoke([{unquote(opt), noun} | opts]) |> ok_result!()
+    def unquote(:"revoke_#{opt}!")(unquote(Macro.var(varname, nil)), opts \\ []) do
+      revoke([{unquote(opt), unquote(Macro.var(varname, nil))} | opts]) |> ok_result!()
     end
 
     @doc """
-    Adds a multi operation to delete all permissions matching the given options exactly, prefilling `[#{opt}: noun]`.
+    Adds a multi operation to delete all `m:Rolex.Permission`s matching the given DSL options, prefilling `#{opt}: #{varname}`.
 
     Returns the updated multi.
 
-    See `c:Rolex.DSL` for other options.
+    See `m:Rolex.DSL` for other options.
     """
-    def unquote(:"multi_revoke_#{opt}")(%Ecto.Multi{} = multi, noun, opts \\ []) do
-      multi_revoke(multi, [{unquote(opt), noun} | opts])
+    def unquote(:"multi_revoke_#{opt}")(
+          %Ecto.Multi{} = multi,
+          unquote(Macro.var(varname, nil)),
+          opts \\ []
+        ) do
+      multi_revoke(multi, [{unquote(opt), unquote(Macro.var(varname, nil))} | opts])
     end
   end
 

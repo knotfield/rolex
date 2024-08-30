@@ -1,7 +1,7 @@
 defmodule Rolex.EctoTypes.Atom do
-  @moduledoc """
-  Custom type for persisting atoms.
-  """
+  @moduledoc false
+
+  # Custom type for persisting atoms
 
   use Ecto.Type
 

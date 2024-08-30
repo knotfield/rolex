@@ -4,9 +4,9 @@ defmodule Rolex.DSL do
 
   The DSL is defined by a handful of keyword options:
 
-    * `role` - a plain atom naming the role
-    * `to` - specifies the subject scope; i.e. "who holds the role?"
-    * `on` - specifics the object scope; i.e. "on which resources does the role apply?
+    * `:role` - a plain atom naming the role
+    * `:to` - specifies the subject scope; i.e. "who holds the role?"
+    * `:on` - specifics the object scope; i.e. "on which resources does the role apply?
 
   > When revoking permissions, `from` is used in place of `to`, because it reads more naturally.
 
@@ -35,6 +35,9 @@ defmodule Rolex.DSL do
     field(:on, :any, virtual: true, source: :object)
   end
 
+  @doc """
+  Returns a new `m:Rolex.DSL` initialized from `input` on success, or `{:error, reason}` otherwise.
+  """
   def new(input \\ []) do
     cond do
       match?(%Ecto.Changeset{valid?: false}, input) -> {:error, :invalid_changeset}
@@ -45,14 +48,12 @@ defmodule Rolex.DSL do
   end
 
   @doc """
-  Converts `input` from external DSL to internal params.
+  Converts `input` from external DSL options to internal `m:Rolex.Permission` schema params.
 
   Returns an atom-keyed map on success, or an `{:error, reason}` tuple otherwise.
-
-  This is the bit that provides the boundary between the Rolex DSL and the `c:Permission` schema.
   """
-  def to_permission_params(%DSL{} = dsl) do
-    dsl
+  def to_permission_params(%DSL{} = input) do
+    input
     |> Map.from_struct()
     |> Enum.flat_map(fn
       {_, nil} ->
@@ -106,11 +107,11 @@ defmodule Rolex.DSL do
   @doc """
   Returns a changeset for DSL options used when granting or denying permissions.
 
-  DSL:
+  ## Options:
 
-      * `role` - a plain atom naming a role
-      * `to` - `:all`, schema, or entity
-      * `on` - `:all`, schema, or entity
+    * `:role` - a plain atom naming a role
+    * `:to` - `:all`, schema, or entity
+    * `:on` - `:all`, schema, or entity
 
   """
   def changeset_for_grant_or_deny(opts) do
@@ -125,16 +126,16 @@ defmodule Rolex.DSL do
   @doc """
   Returns a changeset for options used when revoking permissions.
 
-  DSL:
+  ## Options:
 
-      * `role` - a plain atom naming a role, or:
-        * `:any` - will match ANY permission role
-      * `from` - `:all`, schema, entity, or:
-        * `:any` - will match ANY permission subject
-        * `{:any, <schema>}` - will match ANY permission subject of the named schema
-      * `on` - `:all`, schema, entity, or:
-        * `:any` - will match ANY permission object
-        * `{:any, <schema>}` - will match ANY permission object of the named schema
+    * `:role` - a plain atom naming a role, or:
+      * `:any` - will match **any** permission role
+    * `:from` - `:all`, schema, entity, or:
+      * `:any` - will match **any** permission subject
+      * `{:any, <schema>}` - will match **any** permission subject of the named schema
+    * `:on` - `:all`, schema, entity, or:
+      * `:any` - will match **any** permission object
+      * `{:any, <schema>}` - will match **any** permission object of the named schema
 
   """
   def changeset_for_revoke(opts) do
@@ -149,16 +150,16 @@ defmodule Rolex.DSL do
   @doc """
   Returns a changeset for options used when filtering permissions.
 
-  DSL:
+  ## Options:
 
-      * `role` - a plain atom naming a role, or:
-        * `:any` - will match ANY permission role
-      * `to` - `:all`, schema, entity, or:
-        * `:any` - will match ANY permission subject
-        * `{:any, <schema>}` - will match ANY permission subject of the named type
-      * `on` - `:all`, schema, entity, or:
-        * `:any` - will match ANY permission object
-        * `{:any, <schema>}` - will match ANY permission object of the named type
+    * `:role` - a plain atom naming a role, or:
+      * `:any` - will match **any** permission role
+    * `:to` - `:all`, schema, entity, or:
+      * `:any` - will match **any** permission subject
+      * `{:any, <schema>}` - will match **any** permission subject of the named type
+    * `:on` - `:all`, schema, entity, or:
+      * `:any` - will match **any** permission object
+      * `{:any, <schema>}` - will match **any** permission object of the named type
 
   """
   def changeset_for_filter(opts) do

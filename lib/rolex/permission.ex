@@ -4,10 +4,10 @@ defmodule Rolex.Permission do
 
   A permission is an intersection of four pieces of information:
 
-      * verb - either "grant" or "deny"
-      * role - the role being granted or denied
-      * subject - the entity (or entities) being granted or denied the role
-      * object - the entity (or entities) on which the subject is being granted the role
+    * verb - either "grant" or "deny"
+    * role - the role being granted or denied
+    * subject - the entity (or entities) being granted or denied the role
+    * object - the entity (or entities) on which the subject is being granted the role
 
   For example, a permission that "grants admin to user 42 on all tasks" would look like this:
 

@@ -1,6 +1,6 @@
 defmodule Rolex.Queryable do
   @moduledoc """
-  Use this module to add role-based query scoping functions to a context.
+  Provides role-based query scoping functions.
   """
 
   import Ecto.Query
@@ -17,8 +17,8 @@ defmodule Rolex.Queryable do
 
   ## DSL
 
-      * :role - names the granted role
-      * :on - the permission object ("what")
+    * `:role` - names the granted role
+    * `:on` - the permission object ("what")
 
   ## Examples
 
@@ -34,10 +34,10 @@ defmodule Rolex.Queryable do
 
   Permission scope itself is controlled by `opts`.
 
-  ## DSL
+  ## Options
 
-      * :role - names the granted role
-      * :to - the permission subject ("who")
+    * `:role` - names the granted role
+    * `:to` - the permission subject ("who")
 
   ## Examples
 

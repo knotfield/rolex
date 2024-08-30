@@ -1,12 +1,11 @@
 defmodule Rolex.EctoTypes.MappedUUID do
-  @moduledoc """
-  Custom type to support persisting special atoms as specific "magic" UUIDs.
+  @moduledoc false
 
-  Options:
-
-      * `values` - maps atoms to the uuids that represent them in the database;
-                   e.g. `[admin: "00000000-0000-0000-0000-000000000000"]`
-  """
+  # Custom type to support persisting special atoms as specific "magic" UUIDs.
+  # Options:
+  #
+  #   * `values` - maps atoms to the uuids that represent them in the database;
+  #                e.g. `[admin: "00000000-0000-0000-0000-000000000000"]`
 
   use Ecto.ParameterizedType
 
