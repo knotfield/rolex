@@ -19,11 +19,11 @@ defmodule Rolex.ControlTest do
       assert {:error, %Ecto.Changeset{}} = grant([])
     end
 
-    test "upserts a grant permission to the configured repo and returns {:ok, %Permission{}}" do
+    test "upserts a grant permission to the configured repo and returns :ok" do
       user = user_fixture()
       task = task_fixture()
 
-      assert {:ok, %Permission{}} = grant(role: :role_1, to: user, on: task)
+      assert :ok = grant(role: :role_1, to: user, on: task)
 
       assert Repo.get_by(Permission,
                verb: :grant,
@@ -38,13 +38,15 @@ defmodule Rolex.ControlTest do
     test "doesn't create a new grant permission if an identical one already exists" do
       attrs = %{role: :role_1, to: user_fixture(), on: task_fixture()}
 
-      assert {:ok, permission} = grant(attrs)
-      assert {:ok, ^permission} = grant(attrs)
+      :ok = grant(attrs)
+      [permission] = Repo.all(Permission)
+      :ok = grant(attrs)
+      assert [^permission] = Repo.all(Permission)
     end
   end
 
   describe "grant_role/2" do
-    test "upserts a grant permission to the configured repo and returns {:ok, %Permission{}}" do
+    test "upserts a grant permission to the configured repo and returns {:ok, role}" do
       user = user_fixture()
       task = task_fixture()
 
@@ -102,11 +104,11 @@ defmodule Rolex.ControlTest do
       assert {:error, %Ecto.Changeset{}} = deny([])
     end
 
-    test "upserts a deny permission to the configured repo and returns {:ok, %Permission{}}" do
+    test "upserts a deny permission to the configured repo and returns :ok" do
       user = user_fixture()
       task = task_fixture()
 
-      assert {:ok, %Permission{}} = deny(role: :role_1, to: user, on: task)
+      assert :ok = deny(role: :role_1, to: user, on: task)
 
       assert Repo.get_by(Permission,
                verb: :deny,
@@ -121,13 +123,15 @@ defmodule Rolex.ControlTest do
     test "doesn't create a new deny permission if an identical one already exists" do
       attrs = %{role: :role_1, to: user_fixture(), on: task_fixture()}
 
-      assert {:ok, permission} = deny(attrs)
-      assert {:ok, ^permission} = deny(attrs)
+      :ok = deny(attrs)
+      [permission] = Repo.all(Permission)
+      :ok = deny(attrs)
+      assert [^permission] = Repo.all(Permission)
     end
   end
 
   describe "deny_role/2" do
-    test "upserts a deny permission to the configured repo and returns {:ok, %Permission{}}" do
+    test "upserts a deny permission to the configured repo and returns {:ok, role}" do
       user = user_fixture()
       task = task_fixture()
 

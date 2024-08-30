@@ -7,9 +7,9 @@ defmodule RolexTest do
     user = user_fixture()
     task = task_fixture()
 
-    assert {:ok, _} = Rolex.grant_role(:role_1, to: @all, on: Task)
-    assert {:ok, _} = Rolex.grant_role(:role_2, to: User, on: task)
-    assert {:ok, _} = Rolex.grant_role(:role_3, to: user, on: @all)
+    Rolex.grant_role!(:role_1, to: @all, on: Task)
+    Rolex.grant_role!(:role_2, to: User, on: task)
+    Rolex.grant_role!(:role_3, to: user, on: @all)
 
     permissions = Rolex.load_permissions_granted_to(user)
 

@@ -10,7 +10,7 @@ defmodule Rolex.Control do
     @doc """
     Creates a role-#{verb}ing `m:Rolex.Permission` from DSL options.
 
-    Returns `{:ok, permission}` on success, or `{:error, reason}` otherwise.
+    Returns `:ok` on success, or `{:error, reason}` otherwise.
 
     See `m:Rolex.DSL` for options.
     """
@@ -21,7 +21,7 @@ defmodule Rolex.Control do
     @doc """
     Creates a role-#{verb}ing `m:Rolex.Permission` from DSL options.
 
-    Returns the permission on success, or raises an exception otherwise.
+    Returns `:ok` on success, or raises an exception otherwise.
 
     See `m:Rolex.DSL` for options.
     """
@@ -49,7 +49,7 @@ defmodule Rolex.Control do
       See `m:Rolex.DSL` for other options.
       """
       def unquote(:"#{verb}_#{opt}")(unquote(Macro.var(varname, nil)), opts \\ []) do
-        with {:ok, %Permission{}} <-
+        with :ok <-
                apply_to_repo(unquote(verb), [
                  {unquote(opt), unquote(Macro.var(varname, nil))} | opts
                ]) do
@@ -163,6 +163,7 @@ defmodule Rolex.Control do
     end
   end
 
+  defp ok_result!(:ok), do: :ok
   defp ok_result!({:ok, result}), do: result
 
   defp validate_options(operation, opts) do
@@ -180,6 +181,10 @@ defmodule Rolex.Control do
 
       Application.fetch_env!(:rolex, :repo)
       |> apply(function, args)
+      |> case do
+        {:ok, _permission} -> :ok
+        other -> other
+      end
     end
   end
 
