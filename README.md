@@ -42,7 +42,7 @@ Add `rolex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:rolex, "~> 0.3.0"}
+    {:rolex, "~> 0.4.0"}
   ]
 end
 ```
