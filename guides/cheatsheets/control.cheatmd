@@ -1,0 +1,58 @@
+# Permission control
+
+## Granting and denying roles
+{: .col-2}
+
+### Granting roles to a user
+
+#### Grant a role, without restriction
+
+```elixir
+Rolex.grant_to!(user, role: :admin, on: :all)
+```
+
+#### Grant a role on all records of a schema
+
+```elixir
+Rolex.grant_to!(user, role: :approver, on: Task)
+```
+
+#### Grant a role on a single record
+
+```elixir
+Rolex.grant_to!(user, role: :owner, on: task)
+```
+
+### Denying roles to a user
+
+#### Grants a role on all schema records **except** this one
+
+```elixir
+user
+|> Rolex.grant_to!(role: :approver, on: Task)
+|> Rolex.deny_to!(role: :approver, on: task)
+```
+Denying a role **always** overrules granting that role.
+
+## Revoking roles
+{: .col-2}
+
+### Undoing grants and denials
+
+#### Delete all grants and denials on a record
+
+```elixir
+Rolex.revoke_from!(user, role: :approver, on: task)
+```
+
+#### Delete all grants and denials on any record of a schema
+
+```elixir
+Rolex.revoke_from!(user, role: :approver, on: {:any, Task})
+```
+
+#### Delete all of a user's grants and denials
+
+```elixir
+Rolex.revoke_from!(user, role: :any, on: :any)
+```

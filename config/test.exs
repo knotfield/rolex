@@ -1,6 +1,6 @@
 import Config
 
-config :rolex, repo: Rolex.Repo
+config :rolex, repo: Rolex.Repo, binary_ids: true
 
 config :rolex, ecto_repos: [Rolex.Repo]
 

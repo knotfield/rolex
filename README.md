@@ -4,11 +4,11 @@ Rolex is a role management library for Elixir apps.
 
 Goals:
 
-  * role management via grant, deny, and revoke
-  * a self-contained solution that doesn't invade the data model
-  * scoping of Ecto queries according to role requirements
-  * role requirement checks in memory using a list of permissions
-  * simple and consistent ergonomics throughout
+- role management via grant, deny, and revoke
+- a self-contained solution that doesn't invade the data model
+- scoping of Ecto queries according to role requirements
+- role requirement checks in memory using a list of permissions
+- simple and consistent ergonomics throughout
 
 Rolex is only meant to supply **part** of a complete authorization solution: the bits involving role assignment. What you **do** with those roles is up to you!
 
@@ -49,28 +49,8 @@ end
 
 Create and run a migration to set up the `permissions` table.
 
-```elixir
-defmodule MyApp.Repo.Migrations.CreatePermissions do
-  use Ecto.Migration
-
-  def change do
-    create table(:permissions) do
-      add :verb, :string
-      add :role, :string
-      add :subject_type, :string
-      add :subject_id, :binary_id
-      add :object_type, :string
-      add :object_id, :binary_id
-
-      timestamps()
-    end
-
-    create unique_index(
-      :permissions,
-      ~w(verb role subject_type subject_id object_type object_id)a,
-      name: :permissions_unique_index
-    )
-  end
+```shell
+  $ mix rolex.install
 end
 ```
 
@@ -91,9 +71,9 @@ Roles are specified as atoms; e.g. `:admin` or `:editor`.
 
 A permission's subject and object constrain the scope of entities to which the permission applies, and may be specified as:
 
-  * `:all` - a special atom for granting or denying ALL of something
-  * schema - any Ecto schema module
-  * entity - any Ecto schema entity; e.g. `%User{id: 123}`
+- `:all` - a special atom for granting or denying ALL of something
+- schema - any Ecto schema module
+- entity - any Ecto schema entity; e.g. `%User{id: 123}`
 
 When you **grant** or **deny** roles, permissions are created. Rolex can then inspect the full set of "grant" and "deny" permissions to determine which roles, if any, are actually granted. Subject and object scopes are considered, and "deny" permissions override "grant" permissions.
 
@@ -103,9 +83,9 @@ When you **revoke** roles, permissions are deleted.
 
 Nearly everything you can do in Rolex has the form of a function taking one to three pieces of information as a keyword list.
 
-  * `role` - an atom naming the role
-  * `to` (or `from`) - the permission subject scope ("who")
-  * `on` - the permission object scope ("what")
+- `role` - an atom naming the role
+- `to` (or `from`) - the permission subject scope ("who")
+- `on` - the permission object scope ("what")
 
 Functions with arity 1 accept them in that form:
 
@@ -172,7 +152,7 @@ from(t in Task)
 |> MyRepo.all()
 ```
 
-What if we wanted to see users to whom `:admin` has been granted on *any* task? This is very different from having a role on *all* tasks, so Rolex introduces `:any` for this purpose:
+What if we wanted to see users to whom `:admin` has been granted on _any_ task? This is very different from having a role on _all_ tasks, so Rolex introduces `:any` for this purpose:
 
 ```elixir
 # only users with the :admin role on something

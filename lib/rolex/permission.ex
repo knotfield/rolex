@@ -39,26 +39,23 @@ defmodule Rolex.Permission do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Rolex.EctoTypes.Allable
   alias Rolex.EctoTypes.Atom
-  alias Rolex.EctoTypes.MappedUUID
   alias __MODULE__, as: Permission
 
   @all Application.compile_env(:rolex, :all_atom, :all)
   @any Application.compile_env(:rolex, :any_atom, :any)
+  @table Application.compile_env(:rolex, :type, "permissions")
+  @id_type if(Application.compile_env(:rolex, :binary_ids, false), do: :binary_id, else: :id)
 
-  @mapped_uuids %{
-    @all => Application.compile_env(:rolex, :all_uuid, "11111111-1111-1111-1111-111111111111"),
-    @any => Application.compile_env(:rolex, :any_uuid, "00000000-0000-0000-0000-000000000000")
-  }
-
-  @primary_key {:id, :binary_id, autogenerate: true}
-  schema "permissions" do
+  @primary_key {:id, @id_type, autogenerate: true}
+  schema @table do
     field(:verb, Ecto.Enum, values: [:grant, :deny])
     field(:role, Atom)
-    field(:subject_type, Atom)
-    field(:subject_id, MappedUUID, values: @mapped_uuids)
-    field(:object_type, Atom)
-    field(:object_id, MappedUUID, values: @mapped_uuids)
+    field(:subject_type, Allable, type: Atom)
+    field(:subject_id, Allable, type: @id_type)
+    field(:object_type, Allable, type: Atom)
+    field(:object_id, Allable, type: @id_type)
 
     timestamps()
   end
@@ -114,7 +111,10 @@ defmodule Rolex.Permission do
       g.verb == :grant and
         not exists(
           from(d in query,
-            where: d.verb == :deny and d.role in [^@all, field(parent_as(^parent_binding), :role)]
+            where:
+              d.verb == :deny and
+                (is_nil(d.role) or
+                   d.role == field(parent_as(^parent_binding), :role))
           )
         )
     )
@@ -142,6 +142,7 @@ defmodule Rolex.Permission do
   """
   def where_equal(%Ecto.Query{} = query, params \\ %{}) do
     Enum.reduce(params, query, fn
+      {field, @all}, query -> where(query, [q], is_nil(field(q, ^field)))
       {field, value}, query -> where(query, [q], field(q, ^field) == ^value)
     end)
   end
@@ -150,8 +151,14 @@ defmodule Rolex.Permission do
   # Used to identify permissions to be considered, as when checking granted roles.
   defp where_equal_or_all(%Ecto.Query{} = query, params) do
     Enum.reduce(params, query, fn
-      {_, @any}, query -> query
-      {field, value}, query -> where(query, [q], field(q, ^field) in [^@all, ^value])
+      {_, @any}, query ->
+        query
+
+      {field, @all}, query ->
+        where(query, [q], is_nil(field(q, ^field)))
+
+      {field, value}, query ->
+        where(query, [q], is_nil(field(q, ^field)) or field(q, ^field) == ^value)
     end)
   end
 
@@ -188,7 +195,7 @@ defmodule Rolex.Permission do
       case {type, id} do
         {nil, nil} -> nil
         {:all, :all} -> "#{opt} all"
-        {_, :all} -> "#{opt} all #{type_string}"
+        {_, :all} -> "#{opt} #{type_string}"
         {_, id} -> "#{opt} #{type_string} #{id}"
       end
     end

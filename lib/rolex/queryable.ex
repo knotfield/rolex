@@ -8,8 +8,6 @@ defmodule Rolex.Queryable do
   alias Rolex.DSL
   alias Rolex.Permission
 
-  @all Application.compile_env(:rolex, :all_atom, :all)
-
   @doc """
   Scopes `query` to records that are the subject ("who") of a granted permission.
 
@@ -60,7 +58,7 @@ defmodule Rolex.Queryable do
 
     from(q in query,
       inner_join: p in subquery(permissions),
-      on: field(p, ^id_field) in [^@all, q.id]
+      on: is_nil(field(p, ^id_field)) or field(p, ^id_field) == q.id
     )
   end
 end

@@ -17,7 +17,7 @@ defmodule Rolex.PermissionTest do
     test "implements the Inspect protocol" do
       assert "%Rolex.Permission<>" = inspect(%Permission{})
 
-      assert "%Rolex.Permission<grant to all Rolex.User on all Rolex.Task>" =
+      assert "%Rolex.Permission<grant to Rolex.User on Rolex.Task>" =
                inspect(%Permission{
                  verb: :grant,
                  subject_type: User,
@@ -46,10 +46,10 @@ defmodule Rolex.PermissionTest do
       assert struct(Permission,
                verb: :grant,
                role: :role_1,
-               subject_type: @all,
-               subject_id: @all,
+               subject_type: nil,
+               subject_id: nil,
                object_type: Task,
-               object_id: @all
+               object_id: nil
              )
              |> Repo.insert!()
 
@@ -57,7 +57,7 @@ defmodule Rolex.PermissionTest do
                verb: :grant,
                role: :role_2,
                subject_type: User,
-               subject_id: @all,
+               subject_id: nil,
                object_type: Task,
                object_id: task.id
              )
@@ -68,8 +68,8 @@ defmodule Rolex.PermissionTest do
                role: :role_3,
                subject_type: User,
                subject_id: user.id,
-               object_type: @all,
-               object_id: @all
+               object_type: nil,
+               object_id: nil
              )
              |> Repo.insert!()
 
@@ -132,18 +132,78 @@ defmodule Rolex.PermissionTest do
                list_roles_where_granted(subject_type: User, subject_id: user.id)
     end
 
-    # test "omits permissions denied at or above the granted scope", %{task: task, user: user} do
-    #   assert struct(Permission, role: :some_other_role, to: user, on: task) |> Repo.insert!()
-    #   assert [:role_1, :role_2, :role_3] = list_roles_where_granted(to: user, on: task)
+    test "omits permissions denied at or above the granted scope", %{task: task, user: user} do
+      assert struct(Permission,
+               verb: :deny,
+               role: :some_other_role,
+               object_type: User,
+               object_id: user.id,
+               subject_type: Task,
+               subject_id: task.id
+             )
+             |> Repo.insert!()
 
-    #   assert struct(Permission, role: :role_1, to: user, on: task) |> Repo.insert!()
-    #   assert [:role_2, :role_3] = list_roles_where_granted(to: user, on: task)
+      assert [:role_1, :role_2, :role_3] =
+               list_roles_where_granted(
+                 subject_type: User,
+                 subject_id: user.id,
+                 object_type: Task,
+                 object_id: task.id
+               )
 
-    #   assert struct(Permission, role: :role_3, to: user, on: @all) |> Repo.insert!()
-    #   assert [:role_2] = list_roles_where_granted(to: user, on: task)
+      assert struct(Permission,
+               verb: :deny,
+               role: :role_1,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: task.id
+             )
+             |> Repo.insert!()
 
-    #   assert struct(Permission, role: :role_2, to: user, on: Task) |> Repo.insert!()
-    #   assert [] = list_roles_where_granted(to: user, on: task)
-    # end
+      assert [:role_2, :role_3] =
+               list_roles_where_granted(
+                 subject_type: User,
+                 subject_id: user.id,
+                 object_type: Task,
+                 object_id: task.id
+               )
+
+      assert struct(Permission,
+               verb: :deny,
+               role: :role_3,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: nil,
+               object_id: nil
+             )
+             |> Repo.insert!()
+
+      assert [:role_2] =
+               list_roles_where_granted(
+                 subject_type: User,
+                 subject_id: user.id,
+                 object_type: Task,
+                 object_id: task.id
+               )
+
+      assert struct(Permission,
+               verb: :deny,
+               role: :role_2,
+               subject_type: User,
+               subject_id: user.id,
+               object_type: Task,
+               object_id: nil
+             )
+             |> Repo.insert!()
+
+      assert [] =
+               list_roles_where_granted(
+                 subject_type: User,
+                 subject_id: user.id,
+                 object_type: Task,
+                 object_id: task.id
+               )
+    end
   end
 end

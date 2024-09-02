@@ -61,7 +61,15 @@ defmodule Rolex.MixProject do
   defp docs do
     [
       source_ref: "v#{@version}",
-      source_url: @source_url
+      source_url: @source_url,
+      extras: [
+        "guides/introduction/installation.md",
+        "guides/cheatsheets/control.cheatmd"
+      ],
+      groups_for_extras: [
+        Introduction: ~r/guides\/introduction\/.?/,
+        Cheatsheets: ~r/cheatsheets\/.?/
+      ]
     ]
   end
 
