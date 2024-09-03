@@ -1,5 +1,7 @@
 # Rolex
 
+[![Hex.pm](https://img.shields.io/hexpm/v/rolex.svg)](https://hex.pm/packages/rolex) [![Documentation](https://img.shields.io/badge/documentation-gray)](https://hexdocs.pm/rolex/)
+
 Rolex is a role management library for Elixir apps.
 
 Goals:
