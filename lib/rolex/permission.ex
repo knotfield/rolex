@@ -11,7 +11,9 @@ defmodule Rolex.Permission do
 
   For example, a permission that "grants admin to user 42 on all tasks" would look like this:
 
-      `%Permission{verb: :grant, role: :admin, subject_type: User, subject_id: 42, object_type: Task, object_id: :all}`
+  ```elixir
+  %Permission{verb: :grant, role: :admin, subject_type: User, subject_id: 42, object_type: Task, object_id: :all}
+  ```
 
   A permission "applies" to any arbitrary subject and/or object if the corresponding `_type` and `_id`
   fields are either `:all` or a perfect match. This particular permission applies only if the subject
@@ -24,7 +26,9 @@ defmodule Rolex.Permission do
   We can make exceptions by creating "deny" permissions. Continuing our example, suppose we
   now wanted to "deny admin to all subjects on task 99".
 
-      `%Permission{verb: :deny, role: :admin, subject_type: :all, subject_id: :all, object_type: Task, object_id: 99}`
+  ```elixir
+  %Permission{verb: :deny, role: :admin, subject_type: :all, subject_id: :all, object_type: Task, object_id: 99}
+  ```
 
   This permission applies to *all* subjects (regardless of type or id!), but only if the object is
   specifically `%Task{id: 99}`.
@@ -60,9 +64,37 @@ defmodule Rolex.Permission do
     timestamps()
   end
 
-  def changeset(data, params \\ %{})
+  @type action :: :grant | :deny | :revoke
+
+  @typep verb :: :grant | :deny
+  @typep role :: atom()
+  @typep scope_type :: nil | atom()
+  @typep scope_id :: nil | String.t() | integer()
+
+  @opaque t :: %Permission{
+            verb: verb(),
+            role: role(),
+            subject_type: scope_type(),
+            subject_id: scope_id(),
+            object_type: scope_type(),
+            object_id: scope_id()
+          }
+
+  @type changeset :: Ecto.Changeset.t(t())
+
+  @type params :: %{
+          optional(:verb) => verb(),
+          optional(:role) => role(),
+          optional(:subject_type) => scope_type(),
+          optional(:subject_id) => scope_id(),
+          optional(:object_type) => scope_type(),
+          optional(:object_id) => scope_id()
+        }
 
   @fields ~w(verb role subject_type subject_id object_type object_id)a
+
+  @doc false
+  @spec changeset(t(), params()) :: changeset()
   def changeset(%Permission{} = data, params) do
     data
     |> cast(params, @fields)
@@ -75,27 +107,27 @@ defmodule Rolex.Permission do
     enumerable |> Enum.reduce(acc, fun)
   end
 
-  @doc """
-  Returns a changeset for creating a grant permission.
-  """
-  def grant_changeset(params) do
-    %Permission{verb: :grant}
-    |> changeset(params)
-    |> validate_inclusion(:verb, [:grant])
-  end
+  @doc false
+  @spec changeset_and_upsert_options(:grant | :deny, params()) :: {changeset(), keyword()}
+  def changeset_and_upsert_options(verb, params) when verb in [:grant, :deny] do
+    changeset =
+      %Permission{verb: verb}
+      |> changeset(params)
+      |> validate_inclusion(:verb, [verb])
 
-  @doc """
-  Returns a changeset for creating a deny permission.
-  """
-  def deny_changeset(params) do
-    %Permission{verb: :deny}
-    |> changeset(params)
-    |> validate_inclusion(:verb, [:deny])
+    options = [
+      on_conflict: [set: [verb: verb]],
+      conflict_target: @fields,
+      returning: true
+    ]
+
+    {changeset, options}
   end
 
   @doc """
   Returns an initialized `%Ecto.Query{}` to be used for permission queries.
   """
+  @spec base_query() :: Ecto.Query.t()
   def base_query do
     from(p in Permission, as: :permission)
   end
@@ -103,6 +135,7 @@ defmodule Rolex.Permission do
   @doc """
   Narrows a permission query to grant permissions that are not overridden by a deny permission.
   """
+  @spec where_granted(Ecto.Query.t(), params()) :: Ecto.Query.t()
   def where_granted(%Ecto.Query{from: %{as: parent_binding}} = query, params \\ %{}) do
     query
     |> where_equal_or_all(params)
@@ -123,6 +156,7 @@ defmodule Rolex.Permission do
   @doc """
   Narrows a list of permissions to grant permissions that are not overridden by a deny permission.
   """
+  @spec where_granted([t()], params()) :: [t()]
   def filter_granted(list, params \\ %{}) do
     list
     |> filter_equal_or_all(params)
@@ -140,6 +174,7 @@ defmodule Rolex.Permission do
 
   Used to target specific records, as when revoking permissions.
   """
+  @spec where_equal(Ecto.Query.t(), params()) :: Ecto.Query.t()
   def where_equal(%Ecto.Query{} = query, params \\ %{}) do
     Enum.reduce(params, query, fn
       {field, @all}, query -> where(query, [q], is_nil(field(q, ^field)))

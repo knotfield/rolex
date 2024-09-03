@@ -3,32 +3,13 @@ defmodule Rolex do
   The main entry point for interacting with Rolex.
   """
 
+  alias Rolex.Check
   alias Rolex.Control
   alias Rolex.DSL
   alias Rolex.Permission
   alias Rolex.Queryable
 
   # Loading
-
-  @doc """
-  Returns true if any of the given permissions meeting the conditions in `opts` are granted.
-  """
-  def granted?(permissions, opts) do
-    params =
-      DSL.changeset_for_filter(opts)
-      |> DSL.to_permission_params()
-
-    permissions |> Permission.filter_granted(params) |> Enum.any?()
-  end
-
-  @doc """
-  Returns true if any of the given permissions meeting the conditions in `opts` are granted.
-  """
-  for opt <- [:role, :to, :on] do
-    def unquote(:"granted_#{opt}?")(permissions, noun, opts \\ []) do
-      granted?(permissions, [{unquote(opt), noun} | opts])
-    end
-  end
 
   @doc """
   Fetches from the database a list of all permissions granted to `subject`.
@@ -47,7 +28,14 @@ defmodule Rolex do
     |> repo.all()
   end
 
-  # Querying and filtering
+  # Role checks
+
+  defdelegate granted?(permissions, opts \\ []), to: Check
+  defdelegate granted_role?(permissions, role, opts \\ []), to: Check
+  defdelegate granted_to?(permissions, subject, opts \\ []), to: Check
+  defdelegate granted_on?(permissions, object, opts \\ []), to: Check
+
+  # Query scoping
 
   defdelegate where_granted_to(query, opts \\ []), to: Queryable
   defdelegate where_granted_on(query, opts \\ []), to: Queryable

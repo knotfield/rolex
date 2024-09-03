@@ -353,19 +353,16 @@ defmodule Rolex.Control do
     end
   end
 
-  defp validate_options(operation, opts) do
-    case DSL.changeset(operation, opts) do
+  defp validate_options(action, opts) do
+    case DSL.changeset(action, opts) do
       %{valid?: true} = changeset -> {:ok, changeset}
       changeset -> {:error, changeset}
     end
   end
 
-  # uses apply/3 to execute an operation against the configured repo
-  defp apply_to_repo(operation, opts) do
-    with {:ok, changeset} <- validate_options(operation, opts),
-         params <- DSL.to_permission_params(changeset) do
-      {function, args} = operation_tuple(operation, params)
-
+  # uses apply/3 to execute an action against the configured repo
+  defp apply_to_repo(action, opts) do
+    with {:ok, {function, args}} <- convert_dsl_to_repo_operation(action, opts) do
       Application.fetch_env!(:rolex, :repo)
       |> apply(function, args)
       |> case do
@@ -375,42 +372,26 @@ defmodule Rolex.Control do
     end
   end
 
-  # uses apply/3 to add the indicated operation to the multi
-  defp apply_to_multi(multi, operation, opts) do
-    with {:ok, changeset} <- validate_options(operation, opts),
-         params <- DSL.to_permission_params(changeset) do
-      {function, args} = operation_tuple(operation, params)
+  # uses apply/3 to add the indicated action to the multi
+  defp apply_to_multi(multi, action, opts) do
+    with {:ok, {function, args}} <- convert_dsl_to_repo_operation(action, opts) do
       apply(Ecto.Multi, function, [multi, make_ref() | args])
     end
   end
 
-  # returns a {function, args} tuple that can be used with either a repo or a multi
-  defp operation_tuple(:grant, opts) do
-    Permission.grant_changeset(opts)
-    |> changeset_upsert_tuple()
-  end
+  # returns {:ok, {function, args}} telling how a repo would execute `action` with DSL `opts`
+  defp convert_dsl_to_repo_operation(action, opts) do
+    with {:ok, changeset} <- validate_options(action, opts),
+         params <- DSL.to_permission_params(changeset) do
+      cond do
+        action in [:grant, :deny] ->
+          {changeset, upsert_options} = Permission.changeset_and_upsert_options(action, params)
+          {:ok, {:insert, [changeset, upsert_options]}}
 
-  defp operation_tuple(:deny, opts) do
-    Permission.deny_changeset(opts)
-    |> changeset_upsert_tuple()
-  end
-
-  defp operation_tuple(:revoke, opts) do
-    query = Permission.base_query() |> Permission.where_equal(opts)
-    {:delete_all, [query]}
-  end
-
-  defp changeset_upsert_tuple(changeset) do
-    {
-      :insert,
-      [
-        changeset,
-        [
-          on_conflict: [set: [verb: changeset.data.verb]],
-          conflict_target: ~w(verb role subject_type subject_id object_type object_id)a,
-          returning: true
-        ]
-      ]
-    }
+        :revoke ->
+          query = Permission.base_query() |> Permission.where_equal(params)
+          {:ok, {:delete_all, [query]}}
+      end
+    end
   end
 end
