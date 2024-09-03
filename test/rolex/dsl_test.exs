@@ -83,11 +83,6 @@ defmodule Rolex.DSLTest do
       assert %{valid?: true} = changeset(:grant, role: :some_role, to: @all, on: @all)
     end
 
-    # test "permits only certain keys" do
-    #   assert %{types: types} = changeset(:grant, [])
-    #   assert [:on, :role, :to] = Map.keys(types) |> Enum.sort()
-    # end
-
     test "disallows #{inspect(@any)} for any option value" do
       assert %{role: ["is invalid"], on: ["is invalid"], to: ["is invalid"]} =
                changeset(:grant, role: @any, to: @any, on: @any)
@@ -106,11 +101,6 @@ defmodule Rolex.DSLTest do
       assert %{valid?: true} = changeset(:deny, role: :some_role, to: @all, on: @all)
     end
 
-    # test "permits only certain keys" do
-    #   assert %{types: types} = changeset(:deny, [])
-    #   assert [:on, :role, :to] = Map.keys(types) |> Enum.sort()
-    # end
-
     test "disallows #{inspect(@any)} for any option value" do
       assert %{role: ["is invalid"], on: ["is invalid"], to: ["is invalid"]} =
                changeset(:deny, role: @any, to: @any, on: @any)
@@ -128,11 +118,6 @@ defmodule Rolex.DSLTest do
     test "returns a valid changeset if options are valid" do
       assert %{valid?: true} = changeset(:revoke, role: :some_role, from: @all, on: @all)
     end
-
-    # test "permits only certain keys" do
-    #   assert %{types: types} = changeset(:revoke, [])
-    #   assert [:from, :on, :role] = Map.keys(types) |> Enum.sort()
-    # end
 
     test "allows #{inspect(@any)} for any option value" do
       assert %{valid?: true} = changeset(:revoke, role: @any, from: @any, on: @any)
@@ -155,11 +140,6 @@ defmodule Rolex.DSLTest do
       assert %{valid?: true} =
                changeset(:filter, role: :some_role, to: @all, on: @all)
     end
-
-    # test "permits only certain keys" do
-    #   assert %{types: types} = changeset(:filter, [])
-    #   assert [:on, :role, :to] = Map.keys(types) |> Enum.sort()
-    # end
 
     test "allows #{inspect(@any)} for any option value" do
       assert %{valid?: true} = changeset(:filter, role: @any, to: @any, on: @any)
