@@ -19,22 +19,17 @@ If you just need to recognize a few users as being admins, slap a flag into your
 ## Examples
 
 ```elixir
-import Rolex
-
-alias MyApp.Users.User
-alias MyApp.Tasks.Task
-
 # grant some roles to a user
-user |> Rolex.grant_role!(:editor, on: task)
+Rolex.grant_role(:editor, to: user, on: task)
 
 # list all users with a role on that task
-Rolex.where_granted_to(User, role: :editor, on: task) |> MyApp.Repo.all()
+Rolex.where_granted_to(MyApp.Users.User, role: :editor, on: task) |> MyApp.Repo.all()
 
 # fetch user's permissions for future role checks
 permissions = Rolex.load_permissions_granted_to(user)
 
 # do these permissions grant :editor on any tasks?
-permissions |> granted?(role: :editor, on: {:any, Task})
+permissions |> granted_role?(:editor, on: {:any, MyApp.Users.Task})
 ```
 
 ## Installation
