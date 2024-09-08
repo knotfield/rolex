@@ -38,6 +38,13 @@ defmodule Rolex.PermissionTest do
     end
   end
 
+  describe "preloader_query/1" do
+    test "returns a query for preloading permissions" do
+      assert %Ecto.Query{} =
+               preloader_query([], User.__schema__(:association, :permissions))
+    end
+  end
+
   describe "where_granted/2" do
     setup do
       user = user_fixture()

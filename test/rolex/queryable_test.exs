@@ -30,6 +30,31 @@ defmodule Rolex.QueryableTest do
     %{user_1: user_1, user_2: user_2, task_1: task_1, task_2: task_2}
   end
 
+  describe "preload_permissions/3" do
+    test "preloads permissions on a query" do
+      assert [user_1, user_2] =
+               from(u in User, order_by: u.id)
+               |> preload_permissions(:permissions)
+               |> Repo.all()
+
+      assert [:role_1, :role_2, :role_3] ==
+               user_1.permissions |> Enum.map(& &1.role) |> Enum.uniq() |> Enum.sort()
+
+      assert [:role_1, :role_2] ==
+               user_2.permissions |> Enum.map(& &1.role) |> Enum.uniq() |> Enum.sort()
+    end
+
+    test "preloads permissions on individual records", %{user_1: user_1, user_2: user_2} do
+      [user_1, user_2] = [user_1, user_2] |> preload_permissions(:permissions, force: true)
+
+      assert [:role_1, :role_2, :role_3] ==
+               user_1.permissions |> Enum.map(& &1.role) |> Enum.uniq() |> Enum.sort()
+
+      assert [:role_1, :role_2] ==
+               user_2.permissions |> Enum.map(& &1.role) |> Enum.uniq() |> Enum.sort()
+    end
+  end
+
   describe "where_granted_to/2" do
     test "[on: @any] narrows query to subjects where role was granted, period",
          %{user_1: user_1, user_2: user_2} do

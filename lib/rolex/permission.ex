@@ -209,6 +209,33 @@ defmodule Rolex.Permission do
     end)
   end
 
+  def preloader_query(parent_ids, %Ecto.Association.Has{
+        cardinality: :many,
+        related: Permission,
+        related_key: id_key,
+        owner: owner
+      }) do
+    type_key =
+      case id_key do
+        :subject_id -> :subject_type
+        :object_id -> :object_type
+      end
+
+    from(
+      x in fragment(
+        "select unnest(?) as ?",
+        type(^parent_ids, {:array, ^@id_type}),
+        literal(^to_string(id_key))
+      ),
+      join: p in ^base_query(),
+      on:
+        (field(p, ^type_key) == ^owner or is_nil(field(p, ^type_key))) and
+          (field(p, ^id_key) == field(x, ^id_key) or is_nil(field(p, ^id_key))),
+      select: p,
+      select_merge: %{^id_key => type(field(x, ^id_key), ^@id_type)}
+    )
+  end
+
   defimpl Inspect do
     def inspect(permission, _opts) do
       words =

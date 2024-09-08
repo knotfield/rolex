@@ -13,7 +13,28 @@ defmodule Rolex.Queryable do
   @type any_on_opt :: DSL.any_on_opt()
 
   @doc """
-  Scopes `query` to records that are the subject ("who") of a granted permission.
+  Adds permission preloading to the named association on a query.
+  """
+  def preload_permissions(%Ecto.Query{} = query, assoc_name) do
+    from(q in query, preload: [{^assoc_name, ^(&permission_preloader/2)}])
+  end
+
+  @doc """
+  Preloads a named permission association on loaded records.
+  """
+  def preload_permissions(structs_or_struct_or_nil, assoc_name, opts \\ []) do
+    repo = Application.fetch_env!(:rolex, :repo)
+    structs_or_struct_or_nil |> repo.preload([{assoc_name, &permission_preloader/2}], opts)
+  end
+
+  # preloader function to be used with `Ecto.Query.preload/3` or `Ecto.Repo.preload/3`.
+  defp permission_preloader(parent_ids, assoc) do
+    repo = Application.fetch_env!(:rolex, :repo)
+    Permission.preloader_query(parent_ids, assoc) |> repo.all()
+  end
+
+  @doc """
+  Scopes `queryable` to records that are the subject of a granted permission.
 
   Role and object scope are narrowed by DSL options.
 

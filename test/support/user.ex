@@ -7,8 +7,6 @@ defmodule Rolex.User do
   schema "users" do
     field(:name, :string, default: "some user")
 
-    field(:permissions, {:array, :any}, virtual: true)
-
-    timestamps(type: :utc_datetime)
+    has_many(:permissions, Rolex.Permission, foreign_key: :subject_id)
   end
 end
