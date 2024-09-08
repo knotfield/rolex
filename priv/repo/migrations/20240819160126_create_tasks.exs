@@ -4,8 +4,6 @@ defmodule Rolex.Repo.Migrations.CreateTasks do
   def change do
     create table(:tasks) do
       add :name, :string
-
-      timestamps()
     end
   end
 end

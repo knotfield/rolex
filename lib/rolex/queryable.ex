@@ -54,7 +54,7 @@ defmodule Rolex.Queryable do
   end
 
   @doc """
-  Scopes `query` to records that are the object ("what") of a granted permission.
+  Scopes `queryable` to records that are the object of a granted permission.
 
   Role and subject scope are narrowed by DSL options.
 

@@ -49,8 +49,8 @@ defmodule Rolex.Permission do
 
   @all Application.compile_env(:rolex, :all_atom, :all)
   @any Application.compile_env(:rolex, :any_atom, :any)
-  @table Application.compile_env(:rolex, :type, "permissions")
-  @id_type if(Application.compile_env(:rolex, :binary_ids, false), do: :binary_id, else: :id)
+  @table Application.compile_env(:rolex, :table, "permissions")
+  @id_type Application.compile_env(:rolex, :id_type, :id)
 
   @primary_key {:id, @id_type, autogenerate: true}
   schema @table do
@@ -100,7 +100,7 @@ defmodule Rolex.Permission do
     |> cast(params, @fields)
     |> validate_required(@fields)
     |> reduce_over(@fields, &validate_exclusion(&2, &1, [@any]))
-    |> unique_constraint(:role, name: :permissions_unique_index)
+    |> unique_constraint(:role, name: :"#{@table}_unique_index")
   end
 
   defp reduce_over(acc, enumerable, fun) do
@@ -156,7 +156,7 @@ defmodule Rolex.Permission do
   @doc """
   Narrows a list of permissions to grant permissions that are not overridden by a deny permission.
   """
-  @spec where_granted([t()], params()) :: [t()]
+  @spec filter_granted([t()], params()) :: [t()]
   def filter_granted(list, params \\ %{}) do
     list
     |> filter_equal_or_all(params)
@@ -247,6 +247,7 @@ defmodule Rolex.Permission do
         ]
         |> Enum.filter(& &1)
         |> Enum.join(" ")
+        |> String.trim()
 
       "%Rolex.Permission<#{words}>"
     end

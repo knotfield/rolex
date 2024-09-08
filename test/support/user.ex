@@ -3,7 +3,9 @@ defmodule Rolex.User do
 
   use Ecto.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: true}
+  @id_type Application.compile_env(:rolex, :id_type, :id)
+
+  @primary_key {:id, @id_type, autogenerate: true}
   schema "users" do
     field(:name, :string, default: "some user")
 

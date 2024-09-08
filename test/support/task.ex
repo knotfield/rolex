@@ -3,9 +3,10 @@ defmodule Rolex.Task do
 
   use Ecto.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: true}
+  @id_type Application.compile_env(:rolex, :id_type)
+
+  @primary_key {:id, @id_type, autogenerate: true}
   schema "tasks" do
     field(:name, :string, default: "some task")
-    timestamps(type: :utc_datetime)
   end
 end

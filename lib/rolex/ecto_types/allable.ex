@@ -5,7 +5,7 @@ defmodule Rolex.EctoTypes.Allable do
   # Anything else is cast/loaded/dumped according to its configured `type`; e.g.
   #
   # schema "some_table" do
-  #   field :whatever, type: Ecto.UUID
+  #   field :whatever, Allable, type: Ecto.UUID
   # end
 
   use Ecto.ParameterizedType
