@@ -47,7 +47,7 @@ end
 Create and run a migration to set up the `permissions` table:
 
 ```shell
-$ mix rolex.install --binary-ids
+$ mix rolex.gen.migration
 * creating priv/repo/migrations/20240902155226_create_permissions.exs
 
 $ mix ecto.migrate
