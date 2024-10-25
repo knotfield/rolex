@@ -78,14 +78,15 @@ defmodule Rolex.Queryable do
       DSL.changeset_for_filter(opts)
       |> DSL.to_permission_params()
 
-    permissions =
+    permissions_query =
       Permission.base_query()
       |> Permission.where_granted(params)
       |> distinct([p], field(p, ^id_field))
 
     from(q in queryable,
-      inner_join: p in subquery(permissions),
-      on: is_nil(field(p, ^id_field)) or field(p, ^id_field) == q.id
+      inner_join: p in subquery(permissions_query),
+      on: is_nil(field(p, ^id_field)) or field(p, ^id_field) == q.id,
+      distinct: q.id
     )
   end
 end

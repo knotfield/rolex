@@ -90,6 +90,26 @@ defmodule Rolex.QueryableTest do
       assert [^user_1, ^user_2] = list_users_granted_to(role: [:role_1, :role_2], on: @any)
       assert [^user_1] = list_users_granted_to(role: [:role_3], on: @any)
     end
+
+    test "returns each object only once", %{task_1: task_1, user_1: user_1} do
+      user_1
+      |> Rolex.grant_to!(role: :even, on: :all)
+      |> Rolex.grant_to!(role: :more, on: Task)
+      |> Rolex.grant_to!(role: :roles, on: task_1)
+
+      task_1
+      |> Rolex.grant_on!(role: :this, to: :all)
+      |> Rolex.grant_on!(role: :may_be, to: User)
+      |> Rolex.grant_on!(role: :excessive, to: user_1)
+
+      assert [^task_1] =
+               list_tasks_granted_on(to: user_1)
+               |> Enum.filter(&(&1.id == task_1.id))
+
+      assert [^user_1] =
+               list_users_granted_to(on: task_1)
+               |> Enum.filter(&(&1.id == user_1.id))
+    end
   end
 
   # gets granted roles both ways and returns them if they match -- or raises if they don't
