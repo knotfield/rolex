@@ -84,6 +84,12 @@ defmodule Rolex.QueryableTest do
       assert [^task_1] = list_tasks_granted_on(role: :role_2, to: user_2)
       assert [] = list_tasks_granted_on(role: :role_3, to: user_2)
     end
+
+    test "[role: <list>] narrows query to objects where any of the listed roles were granted to subject",
+         %{user_1: user_1, user_2: user_2} do
+      assert [^user_1, ^user_2] = list_users_granted_to(role: [:role_1, :role_2], on: @any)
+      assert [^user_1] = list_users_granted_to(role: [:role_3], on: @any)
+    end
   end
 
   # gets granted roles both ways and returns them if they match -- or raises if they don't
@@ -161,6 +167,12 @@ defmodule Rolex.QueryableTest do
          %{task_1: task_1, user_1: user_1} do
       assert [:role_1] = list_roles_granted(to: task_1)
       assert [:role_1, :role_2, :role_3] = list_roles_granted(to: user_1)
+    end
+
+    test "[role: <list>] filters the list to permissions granting any of the listed roles",
+         %{task_1: task_1, user_1: user_1} do
+      assert [] = list_roles_granted(to: task_1, role: [:role_2, :role_3])
+      assert [:role_2, :role_3] = list_roles_granted(to: user_1, role: [:role_2, :role_3])
     end
 
     test "omits permissions denied at or above the granted scope",

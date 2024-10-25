@@ -193,7 +193,7 @@ defmodule Rolex.Permission do
         where(query, [q], is_nil(field(q, ^field)))
 
       {field, value}, query ->
-        where(query, [q], is_nil(field(q, ^field)) or field(q, ^field) == ^value)
+        where(query, [q], is_nil(field(q, ^field)) or field(q, ^field) in ^List.wrap(value))
     end)
   end
 
@@ -204,7 +204,7 @@ defmodule Rolex.Permission do
     |> Enum.filter(fn permission ->
       Enum.all?(params, fn
         {_, @any} -> true
-        {field, value} -> Map.get(permission, field) in [@all, value]
+        {field, value} -> Map.get(permission, field) in [@all | List.wrap(value)]
       end)
     end)
   end

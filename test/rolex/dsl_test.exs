@@ -145,6 +145,10 @@ defmodule Rolex.DSLTest do
       assert %{valid?: true} = changeset(:filter, role: @any, to: @any, on: @any)
     end
 
+    test "allows role: <list-of-atoms>" do
+      assert %{valid?: true} = changeset(:filter, role: [:one, :two])
+    end
+
     test "allows to: <schema> and on: <schema>" do
       assert %{valid?: true} =
                changeset(:filter, to: User, on: Task)

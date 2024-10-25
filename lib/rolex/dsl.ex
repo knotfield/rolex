@@ -185,6 +185,7 @@ defmodule Rolex.DSL do
 
     * `:role` - a plain atom naming a role, or:
       * `:any` - will match **any** permission role
+      * a list of plain atoms naming all roles of interest
     * `:to` - `:all`, schema, record, or:
       * `:any` - will match **any** permission subject
       * `{:any, <schema>}` - will match **any** permission subject of the named schema
@@ -200,7 +201,7 @@ defmodule Rolex.DSL do
 
     %DSL{}
     |> cast(to_atom_keyed_map(opts), fields)
-    |> validate_change_value_type(:role, [:any, :plain_atom])
+    |> validate_change_value_type(:role, [:any, :plain_atom, :list_of_plain_atoms])
     |> validate_change_value_type(:to, [:all, :any, :schema, :any_tuple, :record])
     |> validate_change_value_type(:on, [:all, :any, :schema, :any_tuple, :record])
   end
@@ -225,11 +226,16 @@ defmodule Rolex.DSL do
     cond do
       value == @all -> :all
       value == @any -> :any
-      is_atom(value) and not function_exported?(value, :__info__, 1) -> :plain_atom
+      is_plain_atom(value) -> :plain_atom
       is_atom(value) and {:__schema__, 1} in value.__info__(:functions) -> :schema
       is_atom(value) -> :module
+      is_list(value) and Enum.all?(value, &is_plain_atom/1) -> :list_of_plain_atoms
       is_struct(value) and value_type(value.__struct__) == :schema -> :record
       match?({@any, _}, value) and value_type(elem(value, 1)) == :schema -> :any_tuple
     end
+  end
+
+  defp is_plain_atom(value) do
+    is_atom(value) and not function_exported?(value, :__info__, 1)
   end
 end
