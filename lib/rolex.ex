@@ -35,6 +35,10 @@ defmodule Rolex do
   defdelegate granted_to?(permissions, subject, opts \\ []), to: Check
   defdelegate granted_on?(permissions, object, opts \\ []), to: Check
 
+  defdelegate roles_granted(permissions, opts \\ []), to: Check
+  defdelegate roles_granted_to(permissions, subject, opts \\ []), to: Check
+  defdelegate roles_granted_on(permissions, object, opts \\ []), to: Check
+
   # Queryable
   # Scoping subject and object queries
   # Preloading permissions onto subjects and objects

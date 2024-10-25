@@ -1,11 +1,10 @@
 defmodule Mix.Tasks.Rolex.Regen.Migration do
+  @moduledoc false
+  # Regenerates the permission table migration for dev and test migration purposes.
+
   use Mix.Task
 
   @shortdoc "Regenerates permission table migration"
-
-  @moduledoc """
-  Regenerates the permission table migration for dev and test migration purposes.
-  """
 
   @impl true
   def run(_args) do
